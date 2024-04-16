@@ -1,1 +1,1 @@
-open if you dare!!
+git clone if you dare!!
