@@ -2,6 +2,7 @@ var id;
 var ctx;
 var mode;
 
+// Initialize the canvas!!
 function init_canvas() {
     //get screen dimensions
     var screenWidth = window.screen.width;
