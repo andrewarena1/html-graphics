@@ -1,23 +1,23 @@
-var id;
+var canvas;
 var ctx;
 var mode;
 
 function init_canvas() {
+    console.log(window.devicePixelRatio);
     //get screen dimensions
-    var screenWidth = window.screen.width;
-    var screenHeight = window.screen.height;
+    var canvasWidth = window.innerWidth;
+    var canvasHeight = window.innerHeight;
     //create the canvas, set attributes
-    var canvas = document.createElement('canvas');
+    canvas = document.createElement('canvas');
     canvas.id = "nopilates"
-    canvas.width = screenWidth;
-    canvas.height = screenHeight;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
     canvas.style = "border:1px solid #000000";
     //attach it to the body of the page and get ID
     var body = document.getElementsByTagName("body")[0];
     body.appendChild(canvas);
     //get ids
-    id = document.getElementById("nopilates");
-    ctx = id.getContext("2d");
+    ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = "false";
     var textid1 = document.getElementById("yespilates");
 
@@ -27,7 +27,12 @@ function init_canvas() {
     //initialize canvas listeners
     init_canvas_listeners();
 
+    //window resize support
+    window.onresize = window_resize;
+
 }
+
+
 
 function init_buttons() {
     //button listeners
@@ -63,13 +68,13 @@ function init_canvas_listeners() {
     var current_event;
     var previous_event;
     //click Event Listeners
-    id.addEventListener("mousedown", (e) => {
+    canvas.addEventListener("mousedown", (e) => {
         if (mode === "free-pen" || "line-pen") {
             isDrawing = true;
         }
     });
 
-    id.addEventListener("mousemove", (e) => {
+    canvas.addEventListener("mousemove", (e) => {
         if (isDrawing) {
             current_event = e;
             ev(ctx, current_event, previous_event);
@@ -78,7 +83,7 @@ function init_canvas_listeners() {
 
     });
 
-    id.addEventListener("mouseup", (e) => {
+    canvas.addEventListener("mouseup", (e) => {
         if (isDrawing) {
             current_event = e;
             ev(ctx, current_event, previous_event);
@@ -87,7 +92,7 @@ function init_canvas_listeners() {
         }
     });
 
-    id.addEventListener("mouseleave", (e) => {
+    canvas.addEventListener("mouseleave", (e) => {
         if (isDrawing) {
             current_event = e;
             ev(ctx, current_event, previous_event);
@@ -98,9 +103,17 @@ function init_canvas_listeners() {
     });
 }
 
+//window resize listener function
+function window_resize() {
+    var contents = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ctx.putImageData(contents, 0, 0);
+}
+
 //clear function
 function clear() {
-    ctx.clearRect(0, 0, id.width, id.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 //ev functions
