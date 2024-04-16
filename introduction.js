@@ -2,6 +2,7 @@ var canvas;
 var ctx;
 var mode;
 
+// Initialize the canvas!!
 function init_canvas() {
     console.log(window.devicePixelRatio);
     //get screen dimensions
