@@ -5,6 +5,7 @@ body {
 canvas {
     background-color: aliceblue;
     cursor: crosshair;
+    user-select: none;
 }
 
 .tool {

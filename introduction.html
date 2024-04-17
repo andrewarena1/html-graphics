@@ -6,9 +6,10 @@
         above a hello world
     </title>
     <link rel="stylesheet" href="introduction.css">
+    <script src="introduction.js"></script>
 </head>
 
-<body>
+<body onload=init_canvas()>
     <div id="buttons">
         <button class="tool" id="free-pen"><img src="images/free-pen.png"></button>
         <button class="tool" id="line-pen"><img src="images/line-pen.png"></button>
@@ -16,152 +17,6 @@
         <button class="tool" id="clear"><img src="images/clear.png"></button>
 
     </div>
-
-    <script>
-        //get screen dimensions
-        let screenWidth = window.screen.width;
-        let screenHeight = window.screen.height;
-        //create the canvas, set attributes
-        var canvas = document.createElement('canvas');
-        canvas.id = "nopilates"
-        console.log(document.getElementById("free-pen").style.backgroundColor);
-        canvas.width = screenWidth;
-        canvas.height = screenHeight;
-        canvas.style = "border:1px solid #000000";
-        //attach it to the body of the page and get ID
-        var body = document.getElementsByTagName("body")[0];
-        body.appendChild(canvas);
-        //get ids
-        var id = document.getElementById("nopilates");
-        var ctx = id.getContext("2d");
-        ctx.imageSmoothingEnabled = "false";
-        var textid1 = document.getElementById("yespilates");
-        //button listeners
-        init_button(document.getElementById("free-pen"), drawLine);
-        init_button(document.getElementById("line-pen"), lineSeg);
-        init_button(document.getElementById("fountain-pen"));
-        init_button(document.getElementById("clear"))
-
-        //globals 
-        var isDrawing = false;
-        var mode;
-        var current_event;
-        var previous_event;
-        //drawrect
-        function drawRect(xmin, ymin, width, height, fill, border, linewidth) {
-            ctx.beginPath();
-            ctx.fillStyle = fill;
-            ctx.strokeStyle = border;
-            ctx.lineWidth = linewidth;
-            ctx.rect(xmin, ymin, width, height);
-            ctx.fill();
-            ctx.stroke();
-            ctx.closePath();
-        }
-        //set button hover colors event listeners
-        function init_button(menu_button, callback_function) {
-            menu_button.addEventListener("mousedown", (e) => {
-                if (menu_button.id === "clear") {
-                    clear();
-                } else {
-                    mode = menu_button.id;
-                    ev = callback_function;
-                }
-
-            });
-            menu_button.addEventListener("mouseover", (e) => {
-                menu_button.style.backgroundColor = "gray";
-                menu_button.style.borderColor = "black";
-            });
-            menu_button.addEventListener("mouseleave", (e) => {
-                menu_button.style.backgroundColor = null;
-                menu_button.style.borderColor = null;
-            });
-        }
-        //clear function
-        function clear() {
-            ctx.clearRect(0, 0, id.width, id.height);
-        }
-
-        //click Event Listeners
-        id.addEventListener("mousedown", (e) => {
-            if (mode === "free-pen" || "line-pen") {
-                isDrawing = true;
-            }
-            if (mode === "clear") {
-                clear()
-            }
-        });
-
-        id.addEventListener("mousemove", (e) => {
-            if (isDrawing) {
-                current_event = e;
-                ev(ctx, current_event, previous_event);
-                previous_event = e;
-            }
-
-        });
-
-        id.addEventListener("mouseup", (e) => {
-            if (isDrawing) {
-                current_event = e;
-                ev(ctx, current_event, previous_event);
-                isDrawing = false;
-                previous_event = null;
-            }
-        });
-
-        id.addEventListener("mouseleave", (e) => {
-            if (isDrawing) {
-                current_event = e;
-                ev(ctx, current_event, previous_event);
-                isDrawing = false;
-                previous_event = null;
-            }
-
-        });
-        //ev functions
-        function drawLine(context, current_event, previous_event) {
-            if (!previous_event) {
-                return;
-            }
-            context.beginPath();
-            context.strokeStyle = "black";
-            context.lineCap = "round";
-            context.lineWidth = 7;
-            context.moveTo(previous_event.offsetX, previous_event.offsetY);
-            context.lineTo(current_event.offsetX, current_event.offsetY);
-            context.stroke();
-            context.closePath();
-        };
-        function lineSeg(context, current_event, previous_event) {
-
-        }
-
-        //key Event Listener
-        document.addEventListener("keydown", (event) => {
-            console.log(event.keyCode);
-            if (event.keyCode === 66) { //break
-                calledtimes = 0;
-                textid1.innerHTML = "b: break";
-            }
-            if (event.keyCode === 77 && isMenuing === false) { //menu
-                textid1.innerHTML = "m: menu";
-                startx = x;
-                starty = y;
-                isMenuing = true;
-                var menuwidth = 100;
-                var menuheight = 100;
-
-                const thing = new Menu(startx, starty, menuwidth, menuheight, 4);
-                thing.display();
-            }
-
-            if (event.keyCode === 50) {
-
-            }
-        });
-    </script>
 </body>
 
 </html>
