@@ -5,12 +5,18 @@
     <title>
         above a hello world
     </title>
+    <link rel="stylesheet" href="introduction.css">
 </head>
 
 <body>
-    <h1 id="yespilates"> welcome </h1>
-    <h2 id="modes"></h2>
-    <button id="linetype1"><img src="button.png"></button>
+    <div id="buttons">
+        <button class="tool" id="free-pen"><img src="images/free-pen.png"></button>
+        <button class="tool" id="line-pen"><img src="images/line-pen.png"></button>
+        <button class="tool" id="fountain-pen"><img src="images/fountain-pen.png"></button>
+        <button class="tool" id="clear"><img src="images/clear.png"></button>
+
+    </div>
+
     <script>
         //get screen dimensions
         let screenWidth = window.screen.width;
@@ -18,6 +24,7 @@
         //create the canvas, set attributes
         var canvas = document.createElement('canvas');
         canvas.id = "nopilates"
+        console.log(document.getElementById("free-pen").style.backgroundColor);
         canvas.width = screenWidth;
         canvas.height = screenHeight;
         canvas.style = "border:1px solid #000000";
@@ -26,155 +33,110 @@
         body.appendChild(canvas);
         //get ids
         var id = document.getElementById("nopilates");
-        var idtx = id.getContext("2d")
-        idtx.imageSmoothingEnabled = "true";
+        var ctx = id.getContext("2d");
+        ctx.imageSmoothingEnabled = "false";
         var textid1 = document.getElementById("yespilates");
-        var textid2 = document.getElementById("modes");
-        var button1 = document.getElementById("linetype1");
-        button1.addEventListener("mousedown", lineset);
+        //button listeners
+        init_button(document.getElementById("free-pen"), drawLine);
+        init_button(document.getElementById("line-pen"), lineSeg);
+        init_button(document.getElementById("fountain-pen"));
+        init_button(document.getElementById("clear"))
+
         //globals 
-        var under;
-        var startx = 0;
-        var starty = 0;
-        var isMenuing = false;
-        idtx.font = "48px serif";
-        var currentmenu;
-        //menu constructor 
-        class Menu {
-
-            constructor(x, y, boundingx, boundingy, numbuttons, fill, border, borderthick, altfill) {
-                this.x = x;
-                this.y = y;
-                this.boundingx = boundingx;
-                this.boundingy = boundingy;
-                this.buttons = [];
-                this.fill = fill || "#545454";
-                this.border = border || "#05998c";
-                this.borderthick = borderthick || 2;
-                this.altfill = altfill || "#7f7f7f";
-                this.under = idtx.getImageData(this.x - this.borderthick, this.y - this.borderthick, this.boundingx + 2 * this.borderthick, this.boundingy + 2 * this.borderthick);
-
-                if (this.buttons === 0) {
-                    console.log("just a button");
-
-                } else {
-                    for (var i = 0; i < numbuttons; i++) {
-                        this.buttons.push(new Button(this.x, this.y + this.boundingy * i / numbuttons, this.boundingx, this.boundingy / numbuttons, this.fill, this.border, this.borderthick, this.altfill));
-                    }
-                    console.log(this.buttons);
-                }
-            }
-            inPosition(mousex, mousey) {
-                if (Math.abs(this.x - mousex) < this.boundingx && Math.abs(this.y - mousey) < this.boundingy) {
-                    return true;
-                }
-                return false;
-            }
-            display() {
-                for (let i in this.buttons) {
-                    this.buttons[i].drawMe();
-                }
-                currentmenu = this;
-                console.log(currentmenu);
-            }
-
-        }
-        class Button {
-            constructor(x, y, boundingx, boundingy, fill, border, borderthick, altfill, altborder) {
-                this.x = x;
-                this.y = y;
-                this.boundingx = boundingx;
-                this.boundingy = boundingy;
-                this.fill = fill || "#545454";
-                this.border = border || "#05998c";
-                this.borderthick = borderthick || 2;
-                this.altfill = altfill || "#7f7f7f";
-                this.altborder = altborder || "#fabc35"
-                this.callback;
-                this.alt;
-            }
-            inPosition(mousex, mousey) {
-                console.log(mousey - this.y);
-                var ydiff = mousey - this.y;
-                var xdiff = mousex - this.x;
-                if ((0 < ydiff) && (ydiff < this.boundingy) && (0 < xdiff) && (xdiff < this.boundingx)) {
-                    console.log(true);
-                    return true;
-                }
-                console.log(false);
-                return false;
-            }
-            drawMe() {
-                drawRect(this.x, this.y, this.boundingx, this.boundingy, this.fill, this.border, this.borderthick);
-                this.alt = false;
-            }
-            drawAlt() {
-                drawRect(this.x, this.y, this.boundingx, this.boundingy, this.altfill, this.altborder, this.borderthick);
-                this.alt = true;
-            }
-        }
+        var isDrawing = false;
+        var mode;
+        var current_event;
+        var previous_event;
         //drawrect
         function drawRect(xmin, ymin, width, height, fill, border, linewidth) {
-            idtx.beginPath();
-            idtx.fillStyle = fill;
-            idtx.strokeStyle = border;
-            idtx.lineWidth = linewidth;
-            idtx.rect(xmin, ymin, width, height);
-            idtx.fill();
-            idtx.stroke();
-            idtx.closePath();
+            ctx.beginPath();
+            ctx.fillStyle = fill;
+            ctx.strokeStyle = border;
+            ctx.lineWidth = linewidth;
+            ctx.rect(xmin, ymin, width, height);
+            ctx.fill();
+            ctx.stroke();
+            ctx.closePath();
+        }
+        //set button hover colors event listeners
+        function init_button(menu_button, callback_function) {
+            menu_button.addEventListener("mousedown", (e) => {
+                if (menu_button.id === "clear") {
+                    clear();
+                } else {
+                    mode = menu_button.id;
+                    ev = callback_function;
+                }
+
+            });
+            menu_button.addEventListener("mouseover", (e) => {
+                menu_button.style.backgroundColor = "gray";
+                menu_button.style.borderColor = "black";
+            });
+            menu_button.addEventListener("mouseleave", (e) => {
+                menu_button.style.backgroundColor = null;
+                menu_button.style.borderColor = null;
+            });
+        }
+        //clear function
+        function clear() {
+            ctx.clearRect(0, 0, id.width, id.height);
         }
 
         //click Event Listeners
         id.addEventListener("mousedown", (e) => {
-            x = e.offsetX;
-            y = e.offsetY;
-            if (isMenuing === false) {
+            if (mode === "free-pen" || "line-pen") {
                 isDrawing = true;
-            } else {
-                idtx.putImageData(currentmenu.under, currentmenu.x - currentmenu.borderthick, starty - currentmenu.borderthick);
-                isMenuing = false;
-                textid1.innerHTML = "welcome";
-
+            }
+            if (mode === "clear") {
+                clear()
             }
         });
 
         id.addEventListener("mousemove", (e) => {
             if (isDrawing) {
-                drawLine(idtx, x, y, e.offsetX, e.offsetY);
+                current_event = e;
+                ev(ctx, current_event, previous_event);
+                previous_event = e;
             }
-            if (isMenuing) {
-                var currentx = e.offsetX;
-                var currenty = e.offsetY;
-                for (button in currentmenu.buttons) {
-                    if (currentmenu.buttons[button].inPosition(currentx, currenty) === true) {
-                        currentmenu.buttons[button].drawAlt();
-                    }
-                }
 
-            }
-            x = e.offsetX;
-            y = e.offsetY;
         });
 
-        window.addEventListener("mouseup", (e) => {
+        id.addEventListener("mouseup", (e) => {
             if (isDrawing) {
-                drawLine(idtx, x, y, e.offsetX, e.offsetY);
-                x = 0;
-                y = 0;
+                current_event = e;
+                ev(ctx, current_event, previous_event);
                 isDrawing = false;
+                previous_event = null;
             }
         });
 
-        function drawLine(context, x1, y1, x2, y2) {
+        id.addEventListener("mouseleave", (e) => {
+            if (isDrawing) {
+                current_event = e;
+                ev(ctx, current_event, previous_event);
+                isDrawing = false;
+                previous_event = null;
+            }
+
+        });
+        //ev functions
+        function drawLine(context, current_event, previous_event) {
+            if (!previous_event) {
+                return;
+            }
             context.beginPath();
             context.strokeStyle = "black";
-            context.lineWidth = 1;
-            context.moveTo(x1, y1);
-            context.lineTo(x2, y2);
+            context.lineCap = "round";
+            context.lineWidth = 7;
+            context.moveTo(previous_event.offsetX, previous_event.offsetY);
+            context.lineTo(current_event.offsetX, current_event.offsetY);
             context.stroke();
             context.closePath();
         };
+        function lineSeg(context, current_event, previous_event) {
+
+        }
 
         //key Event Listener
         document.addEventListener("keydown", (event) => {
