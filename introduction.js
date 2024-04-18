@@ -1,10 +1,8 @@
 var canvas;
 var ctx;
-var mode;
-
+var currentmode = {};
 // Initialize the canvas!!
 function init_canvas() {
-    console.log(window.devicePixelRatio);
     //get screen dimensions
     var canvasWidth = window.innerWidth;
     var canvasHeight = window.innerHeight;
@@ -37,29 +35,99 @@ function init_canvas() {
 
 function init_buttons() {
     //button listeners
-    init_button_listeners(document.getElementById("free-pen"), drawLine);
-    init_button_listeners(document.getElementById("line-pen"), lineSeg);
-    init_button_listeners(document.getElementById("fountain-pen"));
+    init_button_listeners(document.getElementById("free-pen"), {
+        mousedown: function (e) {
+            this.isDrawing = true;
+        },
+        mousemove: function (e) {
+            if (this.isDrawing) {
+                this.current_event = e;
+                drawLine(ctx, this.current_event, this.previous_event);
+                this.previous_event = e;
+            }
+
+        },
+        mouseup: function (e) {
+            if (this.isDrawing) {
+                this.current_event = e;
+                drawLine(ctx, this.current_event, this.previous_event, 7, "butt");
+                this.previous_event = null;
+                this.isDrawing = false
+            }
+
+        }
+    });
+
+    init_button_listeners(document.getElementById("line-pen"), {
+        mousedown: function (e) {
+            this.isDrawing = true;
+            this.previous_event = e;
+        },
+        mousemove: function (e) {
+            return;
+        },
+        mouseup: function (e) {
+            if (this.isDrawing) {
+                this.current_event = e;
+                drawLine(ctx, this.current_event, this.previous_event);
+                this.previous_event = null;
+                this.isDrawing = false;
+            }
+
+        }
+    });
+    init_button_listeners(document.getElementById("fountain-pen"), {
+        mousedown: function (e) {
+            this.isDrawing = true;
+        },
+        mousemove: function (e) {
+            if (this.isDrawing) {
+                this.current_event = e;
+                this.current_time = Date.now();
+                if (this.previous_event) {
+                    this.velocity = euclidean_distance(this.current_event, this.previous_event) / (this.current_time - this.previous_time);
+                    console.log(velocity);
+                }
+                width = getWidth(this.velocity, this.previous_velocity);
+                drawLine(ctx, this.current_event, this.previous_event, width, "butt");
+                this.previous_event = e;
+                this.previous_time = this.current_time;
+                this.previous_velocity = (5 * this.velocity + this.previous_velocity) / 6;
+            }
+        },
+        mouseup: function (e) {
+            if (this.isDrawing) {
+                drawLine(ctx, this.current_event, this.previous_event);
+                this.previous_event = null;
+                this.isDrawing = false;
+            }
+
+        }
+    });
     init_button_listeners(document.getElementById("clear"));
 }
 
 //set button hover colors event listeners
-function init_button_listeners(menu_button, callback_function) {
+function init_button_listeners(menu_button, functionality) {
     menu_button.addEventListener("mousedown", function () {
         if (menu_button.id === "clear") {
             clear();
         } else {
-            mode = menu_button.id;
-            ev = callback_function;
+            currentmode = functionality;
+            console.log(currentmode);
         }
     });
     menu_button.addEventListener("mouseover", function () {
-        menu_button.style.backgroundColor = "gray";
-        menu_button.style.borderColor = "black";
+        if (!menu_button.toggle) {
+            menu_button.style.backgroundColor = "gray";
+            menu_button.style.borderColor = "black";
+        }
     });
     menu_button.addEventListener("mouseleave", function () {
-        menu_button.style.backgroundColor = null;
-        menu_button.style.borderColor = null;
+        if (!menu_button.toggle) {
+            menu_button.style.backgroundColor = null;
+            menu_button.style.borderColor = null;
+        }
     });
 }
 
@@ -69,39 +137,28 @@ function init_canvas_listeners() {
     var current_event;
     var previous_event;
     //click Event Listeners
-    canvas.addEventListener("mousedown", (e) => {
-        if (mode === "free-pen" || "line-pen") {
-            isDrawing = true;
-        }
-    });
+    canvas.addEventListener("mousedown", ev_current);
 
-    canvas.addEventListener("mousemove", (e) => {
-        if (isDrawing) {
-            current_event = e;
-            ev(ctx, current_event, previous_event);
-            previous_event = e;
-        }
+    canvas.addEventListener("mousemove", ev_current);
 
-    });
-
-    canvas.addEventListener("mouseup", (e) => {
-        if (isDrawing) {
-            current_event = e;
-            ev(ctx, current_event, previous_event);
-            isDrawing = false;
-            previous_event = null;
-        }
-    });
+    canvas.addEventListener("mouseup", ev_current);
 
     canvas.addEventListener("mouseleave", (e) => {
         if (isDrawing) {
             current_event = e;
+            previous_event = null;
             ev(ctx, current_event, previous_event);
             isDrawing = false;
-            previous_event = null;
         }
 
     });
+}
+
+function ev_current(e) {
+    var func = currentmode[e.type];
+    if (func) {
+        func(e);
+    }
 }
 
 //window resize listener function
@@ -118,20 +175,24 @@ function clear() {
 }
 
 //ev functions
-function drawLine(context, current_event, previous_event) {
+function drawLine(context, current_event, previous_event, width, cap) {
     if (!previous_event) {
         return;
     }
     context.beginPath();
     context.strokeStyle = "black";
-    context.lineCap = "round";
-    context.lineWidth = 7;
+    context.lineCap = cap || "round";
+    context.lineWidth = width || 7;
     context.moveTo(previous_event.offsetX, previous_event.offsetY);
     context.lineTo(current_event.offsetX, current_event.offsetY);
     context.stroke();
     context.closePath();
 };
 
-function lineSeg(context, current_event, previous_event) {
-    //to be filled
-};
+function getWidth(velocity, previous_velocity) {
+    return 7 - 2 * velocity;
+}
+function euclidean_distance(event1, event2) {
+    return Math.sqrt(Math.pow(event1.offsetX - event2.offsetX, 2) + Math.pow(event1.offsetY - event2.offsetY, 2));
+}
+
