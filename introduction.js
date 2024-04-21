@@ -1,25 +1,34 @@
 var mcanv;
-var transcanv;
+var tcanv;
 var ctx;
 var currentmode = {};
 var dpr = window.devicePixelRatio;
+var mcanv_data;
 // Initialize the mcanv!!
 function init_canvas() {
+    //get body
+    var body = document.getElementsByTagName("body")[0];
     //create the mcanv, set attributes
     mcanv = document.createElement('canvas');
+    tcanv = document.createElement('canvas');
     const dpr = window.devicePixelRatio;
+
     mcanv.id = "mcanv"
     mcanv.width = window.innerWidth * dpr;
     mcanv.height = window.innerHeight * dpr;
     mcanv.style = "border:1px solid #000000";
-    //attach it to the body of the page and get ID
-    var body = document.getElementsByTagName("body")[0];
     body.appendChild(mcanv);
+    mcanv.style.width = `${window.innerWidth}px`;
+    mcanv.style.height = `${window.innerHeight}px`;
+
+    tcanv.id = "tcanv";
+    tcanv.width = window.innerWidth * dpr;
+    tcanv.width = window.innerHeight * dpr;
+    tcanv.style.width = `${window.innerWidth}px`;
+    tcanv.style.height = `${window.innerHeight}px`;
     //get ids
     ctx = mcanv.getContext("2d", { alpha: false });
     ctx.scale(dpr, dpr);
-    mcanv.style.width = `${window.innerWidth}px`;
-    mcanv.style.height = `${window.innerHeight}px`;
     ctx.imageSmoothingEnabled = "false";
     var textid1 = document.getElementById("yespilates");
 
@@ -65,6 +74,7 @@ function init_buttons() {
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
+            mcanv_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
             requestAnimationFrame(rubberline);
         },
         mousemove: function (e) {
@@ -139,7 +149,6 @@ function window_resize() {
     mcanv.style.width = `${window.innerWidth}px`;
     mcanv.style.height = `${window.innerHeight}px`;
     ctx.setTransform(mcanv.width / window.innerWidth, 0, 0, mcanv.height / window.innerHeight, 0, 0);
-    console.log(window.devicePixelRatio);
 }
 
 //clear function
@@ -184,8 +193,10 @@ function rubberline(time) {
     time *= 0.001;
     if (isDrawing) {
         console.log(time);
+        ctx.putImageData(mcanv_data, 0, 0);
         drawLine(ctx, this.current_event, this.previous_event);
         requestAnimationFrame(rubberline);
     }
 
 }
+
