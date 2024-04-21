@@ -1,29 +1,32 @@
-var canvas;
+var mcanv;
+var transcanv;
 var ctx;
 var currentmode = {};
-// Initialize the canvas!!
+var dpr = window.devicePixelRatio;
+// Initialize the mcanv!!
 function init_canvas() {
-    //get screen dimensions
-    var canvasWidth = window.innerWidth;
-    var canvasHeight = window.innerHeight;
-    //create the canvas, set attributes
-    canvas = document.createElement('canvas');
-    canvas.id = "nopilates"
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    canvas.style = "border:1px solid #000000";
+    //create the mcanv, set attributes
+    mcanv = document.createElement('canvas');
+    const dpr = window.devicePixelRatio;
+    mcanv.id = "mcanv"
+    mcanv.width = window.innerWidth * dpr;
+    mcanv.height = window.innerHeight * dpr;
+    mcanv.style = "border:1px solid #000000";
     //attach it to the body of the page and get ID
     var body = document.getElementsByTagName("body")[0];
-    body.appendChild(canvas);
+    body.appendChild(mcanv);
     //get ids
-    ctx = canvas.getContext("2d");
+    ctx = mcanv.getContext("2d", { alpha: false });
+    ctx.scale(dpr, dpr);
+    mcanv.style.width = `${window.innerWidth}px`;
+    mcanv.style.height = `${window.innerHeight}px`;
     ctx.imageSmoothingEnabled = "false";
     var textid1 = document.getElementById("yespilates");
 
     //initialize button properties
     init_buttons();
 
-    //initialize canvas listeners
+    //initialize mcanv listeners
     init_canvas_listeners();
 
     //window resize support
@@ -42,7 +45,7 @@ function init_buttons() {
         mousemove: function (e) {
             if (this.isDrawing) {
                 this.current_event = e;
-                drawLine(ctx, this.current_event, this.previous_event);
+                drawLine(ctx, this.current_event, this.previous_event)
                 this.previous_event = e;
             }
 
@@ -50,7 +53,7 @@ function init_buttons() {
         mouseup: function (e) {
             if (this.isDrawing) {
                 this.current_event = e;
-                drawLine(ctx, this.current_event, this.previous_event, 7, "butt");
+                drawLine(ctx, this.current_event, this.previous_event);
                 this.previous_event = null;
                 this.isDrawing = false
             }
@@ -62,9 +65,10 @@ function init_buttons() {
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
+            requestAnimationFrame(rubberline);
         },
         mousemove: function (e) {
-            return;
+            this.current_event = e;
         },
         mouseup: function (e) {
             if (this.isDrawing) {
@@ -76,35 +80,8 @@ function init_buttons() {
 
         }
     });
-    init_button_listeners(document.getElementById("fountain-pen"), {
-        mousedown: function (e) {
-            this.isDrawing = true;
-        },
-        mousemove: function (e) {
-            if (this.isDrawing) {
-                this.current_event = e;
-                this.current_time = Date.now();
-                if (this.previous_event) {
-                    this.velocity = euclidean_distance(this.current_event, this.previous_event) / (this.current_time - this.previous_time);
-                    console.log(velocity);
-                }
-                width = getWidth(this.velocity, this.previous_velocity);
-                drawLine(ctx, this.current_event, this.previous_event, width, "butt");
-                this.previous_event = e;
-                this.previous_time = this.current_time;
-                this.previous_velocity = (5 * this.velocity + this.previous_velocity) / 6;
-            }
-        },
-        mouseup: function (e) {
-            if (this.isDrawing) {
-                drawLine(ctx, this.current_event, this.previous_event);
-                this.previous_event = null;
-                this.isDrawing = false;
-            }
-
-        }
-    });
-    init_button_listeners(document.getElementById("clear"));
+    init_button_listeners(document.getElementById("chisel-pen"), {});
+    init_button_listeners(document.getElementById("clear"), {});
 }
 
 //set button hover colors event listeners
@@ -114,8 +91,8 @@ function init_button_listeners(menu_button, functionality) {
             clear();
         } else {
             currentmode = functionality;
-            console.log(currentmode);
         }
+
     });
     menu_button.addEventListener("mouseover", function () {
         if (!menu_button.toggle) {
@@ -134,22 +111,18 @@ function init_button_listeners(menu_button, functionality) {
 //init all the canvas listeners
 function init_canvas_listeners() {
     var isDrawing = false;
-    var current_event;
-    var previous_event;
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
     //click Event Listeners
-    canvas.addEventListener("mousedown", ev_current);
+    mcanv.addEventListener("mousedown", ev_current);
 
-    canvas.addEventListener("mousemove", ev_current);
+    mcanv.addEventListener("mousemove", ev_current);
 
-    canvas.addEventListener("mouseup", ev_current);
+    mcanv.addEventListener("mouseup", ev_current);
 
-    canvas.addEventListener("mouseleave", (e) => {
-        if (isDrawing) {
-            current_event = e;
-            previous_event = null;
-            ev(ctx, current_event, previous_event);
-            isDrawing = false;
-        }
+    mcanv.addEventListener("mouseleave", (e) => {
+        mcanv.dispatchEvent(new Event("mouseup"));
 
     });
 }
@@ -163,36 +136,56 @@ function ev_current(e) {
 
 //window resize listener function
 function window_resize() {
-    var contents = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    ctx.putImageData(contents, 0, 0);
+    mcanv.style.width = `${window.innerWidth}px`;
+    mcanv.style.height = `${window.innerHeight}px`;
+    ctx.setTransform(mcanv.width / window.innerWidth, 0, 0, mcanv.height / window.innerHeight, 0, 0);
+    console.log(window.devicePixelRatio);
 }
 
 //clear function
 function clear() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, mcanv.width, mcanv.height);
 }
 
 //ev functions
-function drawLine(context, current_event, previous_event, width, cap) {
+function drawLine(context, current_event, previous_event) {
     if (!previous_event) {
         return;
     }
     context.beginPath();
     context.strokeStyle = "black";
-    context.lineCap = cap || "round";
-    context.lineWidth = width || 7;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.lineWidth = 7;
     context.moveTo(previous_event.offsetX, previous_event.offsetY);
     context.lineTo(current_event.offsetX, current_event.offsetY);
     context.stroke();
     context.closePath();
 };
 
-function getWidth(velocity, previous_velocity) {
-    return 7 - 2 * velocity;
-}
 function euclidean_distance(event1, event2) {
     return Math.sqrt(Math.pow(event1.offsetX - event2.offsetX, 2) + Math.pow(event1.offsetY - event2.offsetY, 2));
 }
 
+function normalize(vector) {
+    var returnvector = vector;
+    var sum = vector[0] * vector[0] + vector[1] * vector[1];
+    var inverse_sqrt_sum = 1 / (Math.sqrt(sum))
+    returnvector[0] = inverse_sqrt_sum * returnvector[0];
+    returnvector[1] = inverse_sqrt_sum * returnvector[1];
+    return returnvector;
+}
+
+function dotproduct(vector1, vector2) {
+    return vector1[0] * vector2[0] + vector1[1] * vector2[1];
+}
+
+function rubberline(time) {
+    time *= 0.001;
+    if (isDrawing) {
+        console.log(time);
+        drawLine(ctx, this.current_event, this.previous_event);
+        requestAnimationFrame(rubberline);
+    }
+
+}
