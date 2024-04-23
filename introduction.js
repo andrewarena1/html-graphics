@@ -3,24 +3,23 @@ class CustomQueue {
         this.maxlen = maxLength;
         this.items = new Array(new ImageData(mcanv.width || 0, mcanv.height || 0));
     }
-    /* incPointer() { //methods affecting the pointer
-         if ((this.pointer < this.length - 1) && (this.items[this.pointer] != null)) {
-             this.pointer++;
-             return true;
-         }
-         return false;
-     }
-     resetPointer() {
-         this.pointer = 0;
-     }
-     setPointer(index) {
-         this.pointer = index;
-     }
-     pointerPeek() {
-         return this.items[this.pointer];
-     } */
+    incPointer() { //methods affecting the pointer
+        if ((this.pointer < this.length - 1) && (this.items[this.pointer] != null)) {
+            this.pointer++;
+            return true;
+        }
+        return false;
+    }
+    resetPointer() {
+        this.pointer = 0;
+    }
+    setPointer(index) {
+        this.pointer = index;
+    }
+    pointerPeek() {
+        return this.items[this.pointer];
+    }
     queue(newitem) { //shifts elements, adds new element to index 0, returns element that is shifted out.
-        this.items.unshift(newitem);
         if (this.items.length > 10) {
             return this.items.pop();
         }
@@ -40,10 +39,11 @@ class CustomQueue {
 var mcanv;
 var tcanv;
 var ctx;
-var currentmode = {};
+var currentmode;
 var dpr = window.devicePixelRatio;
 var mcanv_data;
-var state_history;
+var past_states = [];
+var future_states = [];
 // Initialize the mcanv!!
 function init_canvas() {
     //get body
@@ -70,8 +70,8 @@ function init_canvas() {
     ctx = mcanv.getContext("2d", { alpha: false });
     ctx.scale(dpr, dpr);
     ctx.imageSmoothingEnabled = "false";
+    past_states.push(ctx.getImageData(0, 0, mcanv.width, mcanv.height));
     //state history init
-    state_history = new CustomQueue(10);
 
     //initialize button properties
     init_buttons();
@@ -79,12 +79,15 @@ function init_canvas() {
     //initialize mcanv listeners
     init_canvas_listeners();
 
+    //init color pickers 
+    init_color_pickers();
+
     //window resize support
     window.onresize = window_resize;
 }
 
 
-
+//all inits
 function init_buttons() {
     //button listeners
     init_button_listeners(document.getElementById("free-pen"), {
@@ -172,8 +175,10 @@ function init_buttons() {
     init_button_listeners(document.getElementById("clear"), {});
 }
 
-//set button hover colors event listeners
 function init_button_listeners(menu_button, functionality) {
+    if (!currentmode) { //takes the first button initialized as the default mode on page load
+        currentmode = functionality;
+    }
     menu_button.addEventListener("mousedown", function () {
         if (menu_button.id === "clear") {
             clear();
@@ -182,21 +187,8 @@ function init_button_listeners(menu_button, functionality) {
         }
 
     });
-    menu_button.addEventListener("mouseover", function () {
-        if (!menu_button.toggle) {
-            menu_button.style.backgroundColor = "gray";
-            menu_button.style.borderColor = "black";
-        }
-    });
-    menu_button.addEventListener("mouseleave", function () {
-        if (!menu_button.toggle) {
-            menu_button.style.backgroundColor = null;
-            menu_button.style.borderColor = null;
-        }
-    });
 }
 
-//init all the canvas listeners
 function init_canvas_listeners() {
     var isDrawing = false;
     ctx.lineWidth = 7;
@@ -211,12 +203,32 @@ function init_canvas_listeners() {
 
     mcanv.addEventListener("mouseleave", ev_current);
 }
-//keyboard listener 
+
+function init_color_pickers() {
+    var colors = document.getElementById("colors");
+    var palette = ["white", "yellow", "orange", "red", "magenta", "purple", "blue", "cyan", "black", "gray", "darkgray", "lightgray", "tan", "brown", "darkgreen", "green"];
+    var children = colors.children;
+    for (let i = 0; i < children.length; i++) {
+        children[i].style.backgroundColor = palette[i];
+        colors.children[i].addEventListener("mousedown", () => {
+            ctx.strokeStyle = palette[i];
+            ctx.fillStyle = palette[i];
+        })
+    }
+}
+
+
+/*  Keyboard Listener
+    Current Keybinds: 
+    Ctrl - z: undo, Ctrl - r: redo  */
 var map = {};
 onkeydown = onkeyup = function (e) {
     map[e.key] = e.type == 'keydown';
     if (map["z"] && e.ctrlKey) {
         undoCanvas();
+    }
+    if (map["r"] && e.ctrlKey) {
+        redoCanvas();
     }
 }
 function ev_current(e) {
@@ -225,35 +237,34 @@ function ev_current(e) {
         func(e);
         if (e.type === "mouseup") {
             const thing = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-            state_history.queue(thing);
-            console.log(state_history.items);
+            stateChanged();
         }
     }
 
 }
 
-//window resize listener function
+//window resize listener 
 function window_resize() {
     mcanv.style.width = `${window.innerWidth}px`;
     mcanv.style.height = `${window.innerHeight}px`;
     ctx.setTransform(mcanv.width / window.innerWidth, 0, 0, mcanv.height / window.innerHeight, 0, 0);
 }
 
-//clear function
+//clear 
 function clear() {
     ctx.clearRect(0, 0, mcanv.width, mcanv.height);
+    stateChanged();
 }
 
-//ev functions
+//drawing 
 function drawLine(context, current_event, previous_event) {
     if (!previous_event) {
         return;
     }
     context.beginPath();
-    context.strokeStyle = "black";
+    context.lineWidth = 7;
     context.lineCap = "round";
     context.lineJoin = "round";
-    context.lineWidth = 7;
     context.moveTo(previous_event.offsetX, previous_event.offsetY);
     context.lineTo(current_event.offsetX, current_event.offsetY);
     context.stroke();
@@ -266,10 +277,9 @@ function drawRect(context, current_event, previous_event) {
     }
     const width = current_event.offsetX - previous_event.offsetX;
     const height = current_event.offsetY - previous_event.offsetY;
-    context.beginPath();
-    context.strokeStyle = "black";
     context.lineCap = "square";
     context.lineJoin = "square";
+    context.beginPath();
     context.lineWidth = 7;
     context.rect(previous_event.offsetX, previous_event.offsetY, width, height);
     context.stroke();
@@ -284,10 +294,9 @@ function drawCirc(context, current_event, previous_event) {
     const width = current_event.offsetX - previous_event.offsetX;
     const height = current_event.offsetY - previous_event.offsetY;
     const diameter = euclidean_distance(current_event, previous_event);
-    context.beginPath();
-    context.strokeStyle = "black";
     context.lineCap = "square";
     context.lineJoin = "square";
+    context.beginPath();
     context.lineWidth = 7;
     context.arc(previous_event.offsetX + width / 2, previous_event.offsetY + height / 2, diameter / 2, 0, 2 * Math.PI);
     context.stroke();
@@ -295,7 +304,7 @@ function drawCirc(context, current_event, previous_event) {
     context.closePath();
 };
 
-
+//math functions. probably inefficient
 function euclidean_distance(event1, event2) {
     return Math.sqrt(Math.pow(event1.offsetX - event2.offsetX, 2) + Math.pow(event1.offsetY - event2.offsetY, 2));
 }
@@ -313,6 +322,7 @@ function dotproduct(vector1, vector2) {
     return vector1[0] * vector2[0] + vector1[1] * vector2[1];
 }
 
+//Rubber functions for UX
 function rubberLine() {
     if (isDrawing) {
         ctx.putImageData(mcanv_data, 0, 0);
@@ -338,10 +348,38 @@ function rubberCirc() {
 
 }
 
-function undoCanvas() {
-    const data = state_history.dequeue();
-    console.log(data);
-    ctx.putImageData(data, 0, 0);
+//functions relating to undo and redo
+function stateChanged() {
+    past_states.push(ctx.getImageData(0, 0, mcanv.width, mcanv.height));
+    if (past_states.length > 10) {
+        past_states.shift();
+        /* note: this checks if there are more than 10 past_states. 
+        if so, it shifts 1 to the left. since states are always added once per function call this should work.
+        however, it may bug out if somehow 2 states are pushed before stateChanged is called. */
+    }
 }
+
+function undoCanvas() {
+    var past = past_states[past_states.length - 2];
+    if (!past) {
+        return;
+    }
+    future_states.push(past_states.pop());
+    if (future_states.length > 10) {
+        future_states.shift();
+    }
+    ctx.putImageData(past, 0, 0);
+}
+
+function redoCanvas() {
+    var future = future_states.pop(); //pop off of future
+    if (future) { //check if anything was there to pop
+        ctx.putImageData(future, 0, 0);
+        past_states.push(future); //push future to the top of past_states
+    }
+}
+
+
+
 
 
