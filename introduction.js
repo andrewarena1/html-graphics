@@ -417,7 +417,7 @@ function inside(x, y) {
 }
 
 function set(x, y) {
-    floodFill_data[x, y] = ;
+    floodFill_data[x, y] = [];
 }
 
 function getColorIndicesForCoord(x, y, width) {
