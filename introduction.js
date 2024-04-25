@@ -37,11 +37,13 @@ class CustomQueue {
 }
 
 var mcanv;
-var tcanv;
+var ocanv;
 var ctx;
 var currentmode;
 var dpr = window.devicePixelRatio;
 var mcanv_data;
+var floodFill_data;
+var floodFill_color;
 var past_states = [];
 var future_states = [];
 // Initialize the mcanv!!
@@ -61,11 +63,11 @@ function init_canvas() {
     mcanv.style.width = `${window.innerWidth}px`;
     mcanv.style.height = `${window.innerHeight}px`;
     //tcanv init
-    tcanv.id = "tcanv";
-    tcanv.width = window.innerWidth * dpr;
+    //ocanv = new OffscreenCanvas(); //gain more understanding of ocanv
+    /*tcanv.width = window.innerWidth * dpr;
     tcanv.width = window.innerHeight * dpr;
     tcanv.style.width = `${window.innerWidth}px`;
-    tcanv.style.height = `${window.innerHeight}px`;
+    tcanv.style.height = `${window.innerHeight}px`; */
     //mcanv context init
     ctx = mcanv.getContext("2d", { alpha: false });
     ctx.scale(dpr, dpr);
@@ -169,6 +171,23 @@ function init_buttons() {
                 this.isDrawing = false;
             }
 
+        }
+
+    });
+    init_button_listeners(document.getElementById("fill-tool"), {
+        mousedown: function (e) {
+            var x = e.offsetX;
+            var y = e.offsetY;
+            floodFill_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
+            floodFill_color = floodFill_data[x, y];
+            floodFill(x, y);
+
+        },
+        mousemove: function (e) {
+            return;
+        },
+        mouseup: function (e) {
+            return;
         }
 
     });
@@ -379,6 +398,32 @@ function redoCanvas() {
     }
 }
 
+function floodFill(x, y) {
+    if (!inside(x, y)) { return; }
+    var s = [];
+    s.push([x, y]);
+    while (s.length != 0) {
+        s.pop();
+    }
+
+}
+
+function inside(x, y) {
+    if (floodFill_data[x, y] === floodFill_color) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function set(x, y) {
+    floodFill_data[x, y] = ;
+}
+
+function getColorIndicesForCoord(x, y, width) {
+    const red = y * (width * 4) + x * 4;
+    return [red, red + 1, red + 2, red + 3];
+};
 
 
 
