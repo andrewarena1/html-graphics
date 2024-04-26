@@ -84,6 +84,8 @@ function init_canvas() {
     //init color pickers 
     init_color_pickers();
 
+    init_file_io();
+
     //window resize support
     window.onresize = window_resize;
 }
@@ -191,6 +193,7 @@ function init_buttons() {
         }
 
     });
+    init_button_listeners(document.getElementById("upload-tool"), {});
     init_button_listeners(document.getElementById("clear"), {});
 }
 
@@ -201,6 +204,8 @@ function init_button_listeners(menu_button, functionality) {
     menu_button.addEventListener("mousedown", function () {
         if (menu_button.id === "clear") {
             clear();
+        } else if (menu_button.id === "upload-tool") {
+            document.getElementById("upload-interface").click();
         } else {
             currentmode = functionality;
         }
@@ -236,6 +241,25 @@ function init_color_pickers() {
     }
 }
 
+function init_file_io() {
+    var uploadid = document.getElementById("upload-interface");
+    uploadid.addEventListener("click", (e) => { console.log("yaya") });
+    uploadid.addEventListener("change", (e) => {
+        if (uploadid.files.length === 0) {
+            window.alert("Please select a file.")
+        } else {
+            var data = createImageBitmap(uploadid.files[0]);
+            data.then(function (value) { placeUploadedImage(value) }, function (error) { window.alert("something went wrong!" + error) });
+        }
+        uploadid.value = ""; //make sure that the same file can be uploaded multiple times in a row
+    })
+}
+
+function placeUploadedImage(data) {
+    ctx.drawImage(data, 0, 0);
+    stateChanged();
+}
+
 
 /*  Keyboard Listener
     Current Keybinds: 
@@ -244,7 +268,8 @@ var map = {};
 onkeydown = onkeyup = function (e) {
     map[e.key] = e.type == 'keydown';
     if (map["z"] && e.ctrlKey) {
-        undoCanvas();
+        this.setTimeout(undoCanvas(), 500);
+
     }
     if (map["r"] && e.ctrlKey) {
         redoCanvas();
@@ -296,12 +321,8 @@ function drawRect(context, current_event, previous_event) {
     }
     const width = current_event.offsetX - previous_event.offsetX;
     const height = current_event.offsetY - previous_event.offsetY;
-    context.lineCap = "square";
-    context.lineJoin = "square";
     context.beginPath();
-    context.lineWidth = 7;
     context.rect(previous_event.offsetX, previous_event.offsetY, width, height);
-    context.stroke();
     context.fill();
     context.closePath();
 };
@@ -313,12 +334,8 @@ function drawCirc(context, current_event, previous_event) {
     const width = current_event.offsetX - previous_event.offsetX;
     const height = current_event.offsetY - previous_event.offsetY;
     const diameter = euclidean_distance(current_event, previous_event);
-    context.lineCap = "square";
-    context.lineJoin = "square";
     context.beginPath();
-    context.lineWidth = 7;
     context.arc(previous_event.offsetX + width / 2, previous_event.offsetY + height / 2, diameter / 2, 0, 2 * Math.PI);
-    context.stroke();
     context.fill();
     context.closePath();
 };
@@ -421,10 +438,14 @@ function set(x, y) {
 }
 
 function getColorIndicesForCoord(x, y, width) {
-    const red = y * (width * 4) + x * 4;
-    return [red, red + 1, red + 2, red + 3];
+    const thing = y * (width * 4) + x * 4;
+    return [thing, thing + 1, thing + 2, thing + 3];
 };
 
-
-
-
+async function getFile() {
+    // Open file picker and destructure the result the first handle
+    const root = await navigator.storage.getDirectory();
+    const untitledFile = await root.getFileHandle("ijustcreatedthis.txt", { "create": true });
+    console.log(untitledFile);
+    console.log(root);
+}

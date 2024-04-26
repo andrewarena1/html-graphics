@@ -12,13 +12,18 @@
 
 <body onload=init_canvas()>
     <div id="buttons">
-        <button class="tool" id="free-pen"><img src="images/free-pen.png" width="32" height="32"></button>
-        <button class="tool" id="line-pen"><img src="images/line-pen.png"></button>
-        <button class="tool" id="rect-tool"><img src="images/rect-tool.png"></button>
+        <button title="free-pen" class="tool" id="free-pen"><img src="images/free-pen.png" width="32"
+                height="32"></button>
+        <button title="line-pen" class="tool" id="line-pen"><img src="images/line-pen.png"></button>
+        <button title="rect-tool" class="tool" id="rect-tool"><img src="images/rect-tool.png"></button>
         <button class="tool" id="circle-tool"><img src="images/circle-tool.png"></button>
         <button class="tool" id="fill-tool"><img src="images/fill-tool.png"></button>
+        <button title="upload" class="tool" id="upload-tool"><img src="images/upload-tool.png"></button>
         <button class="tool" id="clear"><img src="images/clear.png"></button>
-
+        <input type="file" id="upload-interface" accept="image/*" />
+    </div>
+    <div id="upload-menu">
+        <p>hi?hi?hi?hi?hi?</p>
     </div>
     <div id="colors">
         <button class="color" id="0"></button>

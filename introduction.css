@@ -14,6 +14,7 @@ canvas {
     top: 50px;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    z-index: 1;
 }
 
 #buttons {
@@ -33,10 +34,12 @@ canvas {
 
 }
 
+
 .tool:hover {
     background-color: bisque;
     border-color: purple;
 }
+
 
 #colors {
     display: flex;
@@ -54,5 +57,22 @@ canvas {
     height: 25px;
     border-width: 1px;
     border-radius: 0px;
+
+}
+
+#upload-interface {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+#upload-menu {
+    display: block;
+    width: 50%;
+    margin: auto;
+    z-index: 0;
+    border: 5px solid goldenrod;
+    background-color: gray;
 
 }
