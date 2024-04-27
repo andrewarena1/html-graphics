@@ -66,13 +66,3 @@ canvas {
     height: 0;
     pointer-events: none;
 }
-
-#upload-menu {
-    display: block;
-    width: 50%;
-    margin: auto;
-    z-index: 0;
-    border: 5px solid goldenrod;
-    background-color: gray;
-
-}

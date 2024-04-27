@@ -46,20 +46,20 @@ var floodFill_data;
 var floodFill_color;
 var past_states = [];
 var future_states = [];
+var img_upload_data;
 // Initialize the mcanv!!
 function init_canvas() {
     //get body
     var body = document.getElementsByTagName("body")[0];
     //create the mcanv, set attributes
-    mcanv = document.createElement('canvas');
     tcanv = document.createElement('canvas');
     const dpr = window.devicePixelRatio;
     //mcanv init
-    mcanv.id = "mcanv"
+    mcanv = document.getElementById("mcanv");
     mcanv.width = window.innerWidth * dpr;
     mcanv.height = window.innerHeight * dpr;
     mcanv.style = "border:1px solid #000000";
-    body.appendChild(mcanv);
+
     mcanv.style.width = `${window.innerWidth}px`;
     mcanv.style.height = `${window.innerHeight}px`;
     //tcanv init
@@ -84,7 +84,7 @@ function init_canvas() {
     //init color pickers 
     init_color_pickers();
 
-    init_file_io();
+    init_IO();
 
     //window resize support
     window.onresize = window_resize;
@@ -121,8 +121,7 @@ function init_buttons() {
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
-            mcanv_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-            requestAnimationFrame(rubberLine);
+            rAF(rubberLine);
         },
         mousemove: function (e) {
             this.current_event = e;
@@ -140,8 +139,7 @@ function init_buttons() {
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
-            mcanv_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-            requestAnimationFrame(rubberRect);
+            rAF(rubberRect);
         },
         mousemove: function (e) {
             this.current_event = e;
@@ -160,8 +158,7 @@ function init_buttons() {
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
-            mcanv_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-            requestAnimationFrame(rubberCirc);
+            rAF(rubberCirc);
         },
         mousemove: function (e) {
             this.current_event = e;
@@ -193,8 +190,32 @@ function init_buttons() {
         }
 
     });
-    init_button_listeners(document.getElementById("upload-tool"), {});
-    init_button_listeners(document.getElementById("clear"), {});
+    init_button_listeners(document.getElementById("upload-tool"), {
+        button_click: function () {
+            document.getElementById("upload-interface").click();
+        },
+        mousedown: function (e) {
+            this.isMoving = true;
+            this.previous_event = e;
+            rAF(placeUploadedImage);
+
+        },
+        mousemove: function (e) {
+            this.current_event = e;
+        },
+        mouseup: function (e) {
+            if (this.isMoving) {
+                this.current_event = e;
+                this.previous_event = null;
+                this.isDrawing = false;
+            }
+        }
+    });
+    init_button_listeners(document.getElementById("clear"), {
+        button_click: function () {
+            clear();
+        }
+    });
 }
 
 function init_button_listeners(menu_button, functionality) {
@@ -202,13 +223,13 @@ function init_button_listeners(menu_button, functionality) {
         currentmode = functionality;
     }
     menu_button.addEventListener("mousedown", function () {
-        if (menu_button.id === "clear") {
-            clear();
-        } else if (menu_button.id === "upload-tool") {
-            document.getElementById("upload-interface").click();
-        } else {
+        if (functionality.button_click) {
+            functionality.button_click();
+        }
+        if (functionality.mousedown) {
             currentmode = functionality;
         }
+
 
     });
 }
@@ -224,6 +245,12 @@ function init_canvas_listeners() {
     mcanv.addEventListener("mousemove", ev_current);
 
     mcanv.addEventListener("mouseup", ev_current);
+
+    mcanv.addEventListener("touchstart", ev_current);
+
+    mcanv.addEventListener("touchmove", ev_current);
+
+    mcanv.addEventListener("touchend", ev_current);
 
     mcanv.addEventListener("mouseleave", ev_current);
 }
@@ -241,23 +268,31 @@ function init_color_pickers() {
     }
 }
 
-function init_file_io() {
+function init_IO() {
     var uploadid = document.getElementById("upload-interface");
-    uploadid.addEventListener("click", (e) => { console.log("yaya") });
     uploadid.addEventListener("change", (e) => {
         if (uploadid.files.length === 0) {
             window.alert("Please select a file.")
         } else {
             var data = createImageBitmap(uploadid.files[0]);
-            data.then(function (value) { placeUploadedImage(value) }, function (error) { window.alert("something went wrong!" + error) });
+            data.then(
+                function (value) {
+                    img_upload_data = value;
+                },
+                function (error) { window.alert("sorry, error: " + error) }
+            );
         }
         uploadid.value = ""; //make sure that the same file can be uploaded multiple times in a row
     })
 }
 
 function placeUploadedImage(data) {
-    ctx.drawImage(data, 0, 0);
-    stateChanged();
+    while (isMoving) {
+        drawLine(0, 0, current_event.offsetX, currentevent.offsetY); //variables are outside of scope here
+        ctx.putImageData(mcanv_data, 0, 0);
+        requestAnimationFrame(placeUploadedImage);
+    }
+
 }
 
 
@@ -275,8 +310,18 @@ onkeydown = onkeyup = function (e) {
         redoCanvas();
     }
 }
+
 function ev_current(e) {
     var func = currentmode[e.type];
+    if (e.type = "touchstart") {
+        func = currentmode["mousedown"];
+    }
+    if (e.type = "touchmove") {
+        func = currentmode["mousemove"];
+    }
+    if (e.type = "touchend") {
+        func = currentmode["mouseup"];
+    }
     if (func) {
         func(e);
         if (e.type === "mouseup") {
@@ -442,10 +487,7 @@ function getColorIndicesForCoord(x, y, width) {
     return [thing, thing + 1, thing + 2, thing + 3];
 };
 
-async function getFile() {
-    // Open file picker and destructure the result the first handle
-    const root = await navigator.storage.getDirectory();
-    const untitledFile = await root.getFileHandle("ijustcreatedthis.txt", { "create": true });
-    console.log(untitledFile);
-    console.log(root);
+function rAF(func) {
+    mcanv_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
+    requestAnimationFrame(func);
 }
