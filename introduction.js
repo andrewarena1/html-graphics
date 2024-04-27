@@ -86,22 +86,6 @@ function init_canvas() {
 
     init_IO();
 
-    document.body.addEventListener("touchstart", function (e) {
-        if (e.target == canvas) {
-            e.preventDefault();
-        }
-    }, false);
-    document.body.addEventListener("touchend", function (e) {
-        if (e.target == canvas) {
-            e.preventDefault();
-        }
-    }, false);
-    document.body.addEventListener("touchmove", function (e) {
-        if (e.target == canvas) {
-            e.preventDefault();
-        }
-    }, false);
-
     //window resize support
     window.onresize = window_resize;
 }
@@ -262,11 +246,35 @@ function init_canvas_listeners() {
 
     mcanv.addEventListener("mouseup", ev_current);
 
-    mcanv.addEventListener("touchstart", ev_current);
+    mcanv.addEventListener("touchstart", (e) => {
+        var touch = e.touches[0];
+        var menv = new MouseEvent("mousedown", {
+            offsetX: touch.offsetX,
+            offsetY: touch.offsetY,
+        })
+        mcanv.dispatchEvent(menv);
+        e.preventDefault();
+    });
 
-    mcanv.addEventListener("touchmove", ev_current);
+    mcanv.addEventListener("touchmove", (e) => {
+        var touch = e.touches[0];
+        var menv = new MouseEvent("mousemove", {
+            offsetX: touch.offsetX,
+            offsetY: touch.offsetY,
+        })
+        mcanv.dispatchEvent(menv);
+        e.preventDefault();
+    });
 
-    mcanv.addEventListener("touchend", ev_current);
+    mcanv.addEventListener("touchend", (e) => {
+        var touch = e.targetTouches[0];
+        var menv = new MouseEvent("mouseup", {
+            offsetX: touch.clientX,
+            offsetY: touch.clientY,
+        })
+        mcanv.dispatchEvent(menv);
+        e.preventDefault();
+    });
 
     mcanv.addEventListener("mouseleave", ev_current);
 }
@@ -329,15 +337,6 @@ onkeydown = onkeyup = function (e) {
 
 function ev_current(e) {
     var func = currentmode[e.type];
-    if (e.type = "touchstart") {
-        func = currentmode["mousedown"];
-    }
-    if (e.type = "touchmove") {
-        func = currentmode["mousemove"];
-    }
-    if (e.type = "touchend") {
-        func = currentmode["mouseup"];
-    }
     if (func) {
         func(e);
         if (e.type === "mouseup") {
