@@ -1,13 +1,14 @@
 body {
     background-color: blueviolet;
     margin: 0px;
+    padding: 0px 0px 0px 0px;
     overflow-y: auto;
     overflow-x: auto;
 
 }
 
 canvas {
-    background-color: whitesmoke;
+    background-color: white;
     cursor: crosshair;
     user-select: none;
     position: absolute;
@@ -58,6 +59,22 @@ canvas {
     border-width: 1px;
     border-radius: 0px;
 
+}
+
+.subtool {
+    display: flex;
+    flex-direction: row;
+}
+
+.submenu {
+    width: 30px;
+    height: 30px;
+    padding: 0px 0px 0px 0px;
+    -webkit-border-radius: 0px;
+    vertical-align: middle;
+    display: inline-block;
+    border-radius: 0;
+    border-width: 3px;
 }
 
 #upload-interface {

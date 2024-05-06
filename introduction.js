@@ -1,78 +1,38 @@
-class CustomQueue {
-    constructor(maxLength) {
-        this.maxlen = maxLength;
-        this.items = new Array(new ImageData(mcanv.width || 0, mcanv.height || 0));
-    }
-    incPointer() { //methods affecting the pointer
-        if ((this.pointer < this.length - 1) && (this.items[this.pointer] != null)) {
-            this.pointer++;
-            return true;
-        }
-        return false;
-    }
-    resetPointer() {
-        this.pointer = 0;
-    }
-    setPointer(index) {
-        this.pointer = index;
-    }
-    pointerPeek() {
-        return this.items[this.pointer];
-    }
-    queue(newitem) { //shifts elements, adds new element to index 0, returns element that is shifted out.
-        if (this.items.length > 10) {
-            return this.items.pop();
-        }
-
-    }
-    dequeue() {
-        console.log("yes: " + this.items);
-        if (this.items.length === 1) {
-            return;
-        } else {
-            return this.items.shift();
-        }
-
-    }
-}
 
 var mcanv;
 var ocanv;
 var ctx;
-var currentmode;
+var mode;
 var dpr = window.devicePixelRatio;
 var mcanv_data;
-var floodFill_data;
-var floodFill_color;
 var past_states = [];
+var current_state;
+var current_access;
 var future_states = [];
 var img_upload_data;
+
 // Initialize the mcanv!!
 function init_canvas() {
-    //get body
-    var body = document.getElementsByTagName("body")[0];
-    //create the mcanv, set attributes
-    tcanv = document.createElement('canvas');
+    //set attributes
     const dpr = window.devicePixelRatio;
+    console.log(dpr);
     //mcanv init
     mcanv = document.getElementById("mcanv");
     mcanv.width = window.innerWidth * dpr;
     mcanv.height = window.innerHeight * dpr;
     mcanv.style = "border:1px solid #000000";
-
     mcanv.style.width = `${window.innerWidth}px`;
     mcanv.style.height = `${window.innerHeight}px`;
-    //tcanv init
-    //ocanv = new OffscreenCanvas(); //gain more understanding of ocanv
-    /*tcanv.width = window.innerWidth * dpr;
-    tcanv.width = window.innerHeight * dpr;
-    tcanv.style.width = `${window.innerWidth}px`;
-    tcanv.style.height = `${window.innerHeight}px`; */
-    //mcanv context init
+    //ctx init
     ctx = mcanv.getContext("2d", { alpha: false });
     ctx.scale(dpr, dpr);
-    ctx.imageSmoothingEnabled = "false";
-    past_states.push(ctx.getImageData(0, 0, mcanv.width, mcanv.height));
+    ctx.webkitImageSmoothingEnabled = "false";
+    ctx.ImageSmoothingEnabled = "false";
+
+    //draw a white rect
+    ctx.fillStyle = "white";
+    drawRect(ctx, { offsetX: mcanv.width, offsetY: mcanv.height }, { offsetX: 0, offsetY: 0 });
+    current_state = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
     //state history init
 
     //initialize button properties
@@ -85,7 +45,6 @@ function init_canvas() {
     init_color_pickers();
 
     init_IO();
-
     //window resize support
     window.onresize = window_resize;
 }
@@ -93,8 +52,9 @@ function init_canvas() {
 
 //all inits
 function init_buttons() {
+    var butts = document.getElementsByTagName("button");
     //button listeners
-    init_button_listeners(document.getElementById("free-pen"), {
+    const free_pen = init_button_listeners(document.getElementById("free-pen"), {
         mousedown: function (e) {
             this.isDrawing = true;
         },
@@ -117,11 +77,11 @@ function init_buttons() {
         }
     });
 
-    init_button_listeners(document.getElementById("line-pen"), {
+    const line_pen = init_button_listeners(document.getElementById("line-pen"), {
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
-            rAF(rubberLine);
+            requestAnimationFrame(rubberLine);
         },
         mousemove: function (e) {
             this.current_event = e;
@@ -135,30 +95,11 @@ function init_buttons() {
 
         }
     });
-    init_button_listeners(document.getElementById("rect-tool"), {
+    const rect_tool = init_button_listeners(document.getElementById("rect-tool"), {
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
-            rAF(rubberRect);
-        },
-        mousemove: function (e) {
-            this.current_event = e;
-        },
-        mouseup: function (e) {
-            if (this.isDrawing) {
-                this.current_event = e;
-                this.previous_event = null;
-                this.isDrawing = false;
-            }
-
-        }
-
-    });
-    init_button_listeners(document.getElementById("circle-tool"), {
-        mousedown: function (e) {
-            this.isDrawing = true;
-            this.previous_event = e;
-            rAF(rubberCirc);
+            requestAnimationFrame(rubberRect);
         },
         mousemove: function (e) {
             this.current_event = e;
@@ -173,14 +114,28 @@ function init_buttons() {
         }
 
     });
-    init_button_listeners(document.getElementById("fill-tool"), {
+    const circle_tool = init_button_listeners(document.getElementById("circle-tool"), {
         mousedown: function (e) {
-            var x = e.offsetX;
-            var y = e.offsetY;
-            floodFill_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-            floodFill_color = floodFill_data[x, y];
-            floodFill(x, y);
+            this.isDrawing = true;
+            this.previous_event = e;
+            requestAnimationFrame(rubberCirc);
+        },
+        mousemove: function (e) {
+            this.current_event = e;
+        },
+        mouseup: function (e) {
+            if (this.isDrawing) {
+                this.current_event = e;
+                this.previous_event = null;
+                this.isDrawing = false;
+            }
 
+        }
+
+    });
+    const fill_tool = init_button_listeners(document.getElementById("fill-tool"), {
+        mousedown: function (e) {
+            prepFill(ctx.fillStyle, e.offsetX, e.offsetY);
         },
         mousemove: function (e) {
             return;
@@ -190,44 +145,49 @@ function init_buttons() {
         }
 
     });
-    init_button_listeners(document.getElementById("upload-tool"), {
+    const upload_tool = init_button_listeners(document.getElementById("upload-tool"), {
         button_click: function () {
             document.getElementById("upload-interface").click();
         },
         mousedown: function (e) {
-            this.isMoving = true;
-            this.previous_event = e;
-            rAF(placeUploadedImage);
-
+            if (this.isMoving) {
+                isMoving = false;
+                ctx.putImageData(current_state, 0, 0);
+                ctx.drawImage(img_upload_data, e.offsetX, e.offsetY);
+                this.isResizing = true;
+                this.previous_event = e;
+                requestAnimationFrame(rubberUploadResize);
+                for (let i = 0; i < butts.length; i++) {
+                    butts[i].disabled = false;
+                }
+            }
         },
         mousemove: function (e) {
             this.current_event = e;
         },
         mouseup: function (e) {
-            if (this.isMoving) {
-                this.current_event = e;
-                this.previous_event = null;
-                this.isDrawing = false;
-            }
+            this.isResizing = false;
+
         }
     });
-    init_button_listeners(document.getElementById("clear"), {
+    const clear_tool = init_button_listeners(document.getElementById("clear"), {
         button_click: function () {
             clear();
         }
     });
+
 }
 
 function init_button_listeners(menu_button, functionality) {
-    if (!currentmode) { //takes the first button initialized as the default mode on page load
-        currentmode = functionality;
+    if (!mode) { //takes the first button initialized as the default mode on page load
+        mode = functionality;
     }
     menu_button.addEventListener("mousedown", function () {
         if (functionality.button_click) {
             functionality.button_click();
         }
         if (functionality.mousedown) {
-            currentmode = functionality;
+            mode = functionality;
         }
 
 
@@ -247,7 +207,7 @@ function init_canvas_listeners() {
     mcanv.addEventListener("mouseup", ev_current);
 
     mcanv.addEventListener("touchstart", (e) => {
-        var touch = e.touches[0];
+        var touch = e.targetTouches[0];
         var menv = new MouseEvent("mousedown", {
             offsetX: touch.offsetX,
             offsetY: touch.offsetY,
@@ -257,7 +217,7 @@ function init_canvas_listeners() {
     });
 
     mcanv.addEventListener("touchmove", (e) => {
-        var touch = e.touches[0];
+        var touch = e.targetTouches[0];
         var menv = new MouseEvent("mousemove", {
             offsetX: touch.offsetX,
             offsetY: touch.offsetY,
@@ -296,27 +256,23 @@ function init_IO() {
     var uploadid = document.getElementById("upload-interface");
     uploadid.addEventListener("change", (e) => {
         if (uploadid.files.length === 0) {
-            window.alert("Please select a file.")
+            window.alert("Please select a file.");
         } else {
             var data = createImageBitmap(uploadid.files[0]);
             data.then(
                 function (value) {
                     img_upload_data = value;
+                    this.isMoving = true;
+                    requestAnimationFrame(rubberUpload);
+                    for (let i = 0; i < butts.length; i++) {
+                        butts[i].disabled = true;
+                    }
                 },
                 function (error) { window.alert("sorry, error: " + error) }
             );
         }
         uploadid.value = ""; //make sure that the same file can be uploaded multiple times in a row
     })
-}
-
-function placeUploadedImage(data) {
-    while (isMoving) {
-        drawLine(0, 0, current_event.offsetX, currentevent.offsetY); //variables are outside of scope here
-        ctx.putImageData(mcanv_data, 0, 0);
-        requestAnimationFrame(placeUploadedImage);
-    }
-
 }
 
 
@@ -336,7 +292,7 @@ onkeydown = onkeyup = function (e) {
 }
 
 function ev_current(e) {
-    var func = currentmode[e.type];
+    var func = mode[e.type];
     if (func) {
         func(e);
         if (e.type === "mouseup") {
@@ -356,21 +312,24 @@ function window_resize() {
 
 //clear 
 function clear() {
-    ctx.clearRect(0, 0, mcanv.width, mcanv.height);
+    ctx.save();
+    ctx.fillStyle = "white";
+    drawRect(ctx, { offsetX: mcanv.width, offsetY: mcanv.height }, { offsetX: 0, offsetY: 0 });
+    ctx.restore();
     stateChanged();
 }
 
 //drawing 
-function drawLine(context, current_event, previous_event) {
-    if (!previous_event) {
+function drawLine(context, cur, prev, width, cap, join) {
+    if (!prev) {
         return;
     }
     context.beginPath();
-    context.lineWidth = 7;
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.moveTo(previous_event.offsetX, previous_event.offsetY);
-    context.lineTo(current_event.offsetX, current_event.offsetY);
+    context.lineWidth = width || 7;
+    context.lineCap = cap || "round";
+    context.lineJoin = join || "round";
+    context.moveTo(prev.offsetX, prev.offsetY);
+    context.lineTo(cur.offsetX, cur.offsetY);
     context.stroke();
     context.closePath();
 };
@@ -420,89 +379,133 @@ function dotproduct(vector1, vector2) {
 
 //Rubber functions for UX
 function rubberLine() {
-    if (isDrawing) {
-        ctx.putImageData(mcanv_data, 0, 0);
+    if (this.isDrawing) {
+        ctx.putImageData(current_state, 0, 0);
         drawLine(ctx, this.current_event, this.previous_event);
         requestAnimationFrame(rubberLine);
     }
-
 }
+
+
 function rubberRect() {
-    if (isDrawing) {
-        ctx.putImageData(mcanv_data, 0, 0);
+    if (this.isDrawing) {
+        ctx.putImageData(current_state, 0, 0);
         drawRect(ctx, this.current_event, this.previous_event);
         requestAnimationFrame(rubberRect);
     }
 
 }
 function rubberCirc() {
-    if (isDrawing) {
-        ctx.putImageData(mcanv_data, 0, 0);
+    if (this.isDrawing) {
+        ctx.putImageData(current_state, 0, 0);
         drawCirc(ctx, this.current_event, this.previous_event);
         requestAnimationFrame(rubberCirc);
     }
 
 }
 
+function rubberUpload() {
+    if (this.isMoving) {
+        if (this.current_event) {
+            ctx.putImageData(current_state, 0, 0);
+            drawLine(ctx, { offsetX: this.current_event.offsetX, offsetY: 0 }, { offsetX: this.current_event.offsetX, offsetY: mcanv.height }, 2);
+            drawLine(ctx, { offsetX: 0, offsetY: this.current_event.offsetY }, { offsetX: mcanv.width, offsetY: this.current_event.offsetY }, 2);
+            ctx.drawImage(img_upload_data, this.current_event.offsetX, this.current_event.offsetY)
+        }
+        requestAnimationFrame(rubberUpload);
+    }
+}
+
+function rubberUploadResize() {
+    if (this.isResizing) {
+        ctx.putImageData(current_state, 0, 0);
+        ctx.drawImage(img_upload_data, this.previous_event.offsetX, this.previous_event.offsetY, this.current_event.offsetX - this.previous_event.offsetX, this.current_event.offsetY - this.previous_event.offsetY);
+        requestAnimationFrame(rubberUploadResize);
+    }
+}
+
 //functions relating to undo and redo
 function stateChanged() {
-    past_states.push(ctx.getImageData(0, 0, mcanv.width, mcanv.height));
+    past_states.push(current_state);
     if (past_states.length > 10) {
         past_states.shift();
         /* note: this checks if there are more than 10 past_states. 
         if so, it shifts 1 to the left. since states are always added once per function call this should work.
         however, it may bug out if somehow 2 states are pushed before stateChanged is called. */
     }
+    current_state = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
+
 }
 
 function undoCanvas() {
-    var past = past_states[past_states.length - 2];
+    var past = past_states.pop();
     if (!past) {
         return;
     }
-    future_states.push(past_states.pop());
+    ctx.putImageData(past, 0, 0);
+    future_states.push(current_state);
+    current_state = past;
     if (future_states.length > 10) {
         future_states.shift();
     }
-    ctx.putImageData(past, 0, 0);
+
 }
 
 function redoCanvas() {
     var future = future_states.pop(); //pop off of future
-    if (future) { //check if anything was there to pop
-        ctx.putImageData(future, 0, 0);
-        past_states.push(future); //push future to the top of past_states
+    if (!future) { //check if there was anything to pop
+        return;
     }
+    ctx.putImageData(future, 0, 0);
+    past_states.push(current_state)
+    current_state = future; //push future to the top of past_states
 }
 
-function floodFill(x, y) {
-    if (!inside(x, y)) { return; }
-    var s = [];
-    s.push([x, y]);
+
+//fill functions
+
+function prepFill(fill, initx, inity) {
+    const x = initx * dpr;
+    const y = inity * dpr;
+
+    const pixelData = {
+        width: current_state.width,
+        height: current_state.height,
+        data: new Uint32Array(current_state.data.buffer), //convert uint8 pixel buffer into uint32 byte array to quarter number of pixel references
+    }
+
+    const fillColor = parseInt(fill.substring(1) + "ff", 16); //convert annoying #ffffff string into a number base 10 (and add transparency to match)
+    const pixelColor = getPixel(pixelData, x, y);
+    console.log(fillColor);
+    console.log(pixelColor);
+
+    if (pixelColor != fillColor) {
+        floodFill(fillColor, pixelColor, pixelData, x, y);
+    }
+    ctx.putImageData(current_state, 0, 0);
+}
+
+
+function floodFill(fillColor, pixelColor, pixelData, x, y) {
+    let s = [x, y];
     while (s.length != 0) {
-        s.pop();
+        let y = s.pop();
+        let x = s.pop();
+        let currentColor = getPixel(pixelData, x, y);
+        if (currentColor === pixelColor) {
+            pixelData.data[y * pixelData.width + x] = fillColor;
+            s.push(x - 1, y);
+            s.push(x + 1, y);
+            s.push(x, y + 1);
+            s.push(x, y - 1);
+        }
     }
-
 }
 
-function inside(x, y) {
-    if (floodFill_data[x, y] === floodFill_color) {
-        return true;
+function getPixel(pixelData, x, y) {
+    if (x < 0 || y < 0 || x >= pixelData.width || y >= pixelData.height) {
+        return -1;
     } else {
-        return false;
+        return pixelData.data[y * pixelData.width + x]
     }
-}
-
-function set(x, y) {
-    floodFill_data[x, y] = [];
-}
-
-function getColorIndicesForCoord(x, y, width) {
-    const thing = y * (width * 4) + x * 4;
-    return [thing, thing + 1, thing + 2, thing + 3];
-};
-
-function rAF(func) {
-    mcanv_data = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-    requestAnimationFrame(func);
 }
