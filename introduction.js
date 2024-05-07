@@ -247,6 +247,7 @@ function init_color_pickers() {
         children[i].style.backgroundColor = palette[i];
         colors.children[i].addEventListener("mousedown", () => {
             ctx.strokeStyle = palette[i];
+            console.log(ctx.strokeStyle);
             ctx.fillStyle = palette[i];
         })
     }
@@ -465,24 +466,29 @@ function redoCanvas() {
 //fill functions
 
 function prepFill(fill, initx, inity) {
+    const dpr = window.devicePixelRatio;
     const x = initx * dpr;
     const y = inity * dpr;
+    const imgArray = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
 
     const pixelData = {
-        width: current_state.width,
-        height: current_state.height,
-        data: new Uint32Array(current_state.data.buffer), //convert uint8 pixel buffer into uint32 byte array to quarter number of pixel references
+        width: imgArray.width,
+        height: imgArray.height,
+        data: new Uint32Array(imgArray.data.buffer), //convert uint8 pixel buffer into uint32 byte array to quarter number of pixel references
     }
 
-    const fillColor = parseInt(fill.substring(1) + "ff", 16); //convert annoying #ffffff string into a number base 10 (and add transparency to match)
+    const chunked = [];
+    const fill_butlessannoying = fill.substring(1);
+    for (let i = 0; i < 3; i++) {
+        chunked.push(fill_butlessannoying.substring(2 * i, 2 * (i + 1)))
+    }
+    const fillColor = parseInt("ff" + chunked.reverse().join(''), 16); //convert annoying #ffffff string into a number base 10 (and add transparency to match)
     const pixelColor = getPixel(pixelData, x, y);
-    console.log(fillColor);
-    console.log(pixelColor);
 
     if (pixelColor != fillColor) {
         floodFill(fillColor, pixelColor, pixelData, x, y);
     }
-    ctx.putImageData(current_state, 0, 0);
+    ctx.putImageData(imgArray, 0, 0);
 }
 
 
@@ -506,6 +512,6 @@ function getPixel(pixelData, x, y) {
     if (x < 0 || y < 0 || x >= pixelData.width || y >= pixelData.height) {
         return -1;
     } else {
-        return pixelData.data[y * pixelData.width + x]
+        return pixelData.data[y * pixelData.width + x];
     }
 }
