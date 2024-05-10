@@ -1,5 +1,5 @@
 body {
-    background-color: blueviolet;
+
     margin: 0px;
     padding: 0px 0px 0px 0px;
     overflow-y: auto;
@@ -21,6 +21,10 @@ canvas {
 #buttons {
     display: flex;
     flex-direction: row;
+    position: fixed;
+    z-index: 2;
+    width: 100%;
+    background-color: blueviolet;
 }
 
 .tool {
@@ -46,10 +50,31 @@ canvas {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    position: absolute;
+    position: fixed;
     width: 200px;
     right: 0px;
     top: 0px;
+    z-index: 2;
+}
+
+#sub-menu {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    position: fixed;
+    width: 40px;
+    right: 0px;
+    top: 30%;
+    z-index: 2;
+}
+
+.sub-tool {
+    width: 40px;
+    height: 40px;
+    padding: 0px 0px 0px 0px;
+    -webkit-border-radius: 0px;
+    border-radius: 0;
+    border-width: 3px;
 
 }
 
@@ -61,23 +86,7 @@ canvas {
 
 }
 
-.subtool {
-    display: flex;
-    flex-direction: row;
-}
-
-.submenu {
-    width: 30px;
-    height: 30px;
-    padding: 0px 0px 0px 0px;
-    -webkit-border-radius: 0px;
-    vertical-align: middle;
-    display: inline-block;
-    border-radius: 0;
-    border-width: 3px;
-}
-
-#upload-interface {
+.upload {
     opacity: 0;
     width: 0;
     height: 0;

@@ -8,53 +8,45 @@ var mcanv_data;
 var past_states = [];
 var current_state;
 var current_access;
+var clipboard;
 var future_states = [];
 var img_upload_data;
-
+var butts;
 // Initialize the mcanv!!
 function init_canvas() {
     //set attributes
     const dpr = window.devicePixelRatio;
-    console.log(dpr);
-    //mcanv init
-    mcanv = document.getElementById("mcanv");
+    mcanv = document.getElementById("mcanv");                       //mcanv init
     mcanv.width = window.innerWidth * dpr;
     mcanv.height = window.innerHeight * dpr;
     mcanv.style = "border:1px solid #000000";
     mcanv.style.width = `${window.innerWidth}px`;
     mcanv.style.height = `${window.innerHeight}px`;
-    //ctx init
-    ctx = mcanv.getContext("2d", { alpha: false });
+    ctx = mcanv.getContext("2d", { alpha: false });                 //ctx init
     ctx.scale(dpr, dpr);
     ctx.webkitImageSmoothingEnabled = "false";
     ctx.ImageSmoothingEnabled = "false";
 
-    //draw a white rect
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "white";                                        //draw a white rect
     drawRect(ctx, { offsetX: mcanv.width, offsetY: mcanv.height }, { offsetX: 0, offsetY: 0 });
     current_state = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-    //state history init
 
-    //initialize button properties
-    init_buttons();
-
-    //initialize mcanv listeners
-    init_canvas_listeners();
-
-    //init color pickers 
-    init_color_pickers();
-
-    init_IO();
-    //window resize support
+    init_buttons();             //initialize button properties
+    init_canvas_listeners();    //init canvas listeners 
+    init_color_pickers();       //init color pickers 
+    init_IO();                  //bad 
     window.onresize = window_resize;
 }
 
 
 //all inits
 function init_buttons() {
-    var butts = document.getElementsByTagName("button");
+    butts = document.getElementsByTagName("button");                         //BUTTONS!!!!!!!
     //button listeners
     const free_pen = init_button_listeners(document.getElementById("free-pen"), {
+        button_click: function (e) {
+            //change submenu
+        },
         mousedown: function (e) {
             this.isDrawing = true;
         },
@@ -76,7 +68,6 @@ function init_buttons() {
 
         }
     });
-
     const line_pen = init_button_listeners(document.getElementById("line-pen"), {
         mousedown: function (e) {
             this.isDrawing = true;
@@ -92,7 +83,6 @@ function init_buttons() {
                 this.previous_event = null;
                 this.isDrawing = false;
             }
-
         }
     });
     const rect_tool = init_button_listeners(document.getElementById("rect-tool"), {
@@ -110,7 +100,6 @@ function init_buttons() {
                 this.previous_event = null;
                 this.isDrawing = false;
             }
-
         }
 
     });
@@ -145,14 +134,36 @@ function init_buttons() {
         }
 
     });
+    const select_tool = init_button_listeners(document.getElementById("select-tool"), {
+        mousedown: function (e) {
+            this.isMoving = true;
+            this.first_event = e;
+        },
+        mousemove: function (e) {
+            this.current_event = e;
+        },
+        mouseup: function (e) {
+            if (isMoving) {
+                const width = this.current_event.offsetX - this.first_event.offsetX;
+                const length = this.current_event.offsetY - this.first_event.offsetY;
+                if (width != 0 && length != 0) {
+                    clipboard = ctx.getImageData(this.first_event.offsetX, this.first_event.offsetY, width, length);
+                }
+            }
+
+
+        }
+    })
     const upload_tool = init_button_listeners(document.getElementById("upload-tool"), {
         button_click: function () {
-            document.getElementById("upload-interface").click();
+            document.getElementById("u-image").click();
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = "black";
         },
         mousedown: function (e) {
             if (this.isMoving) {
                 isMoving = false;
-                ctx.putImageData(current_state, 0, 0);
                 ctx.drawImage(img_upload_data, e.offsetX, e.offsetY);
                 this.isResizing = true;
                 this.previous_event = e;
@@ -164,12 +175,22 @@ function init_buttons() {
         },
         mousemove: function (e) {
             this.current_event = e;
+            if (this.isMoving) {
+                console.log(colorValueToHexCode(getPixelfromUInt8(current_state, e.offsetX, e.offsetY, dpr)));
+            }
         },
         mouseup: function (e) {
             this.isResizing = false;
+            this.previous_event = null;
+            ctx.restore();
 
         }
     });
+    const pattern_tool = init_button_listeners(document.getElementById("pattern-tool"), {
+        button_click: function () {
+            document.getElementById("u-pattern").click();
+        }
+    })
     const clear_tool = init_button_listeners(document.getElementById("clear"), {
         button_click: function () {
             clear();
@@ -189,54 +210,7 @@ function init_button_listeners(menu_button, functionality) {
         if (functionality.mousedown) {
             mode = functionality;
         }
-
-
     });
-}
-
-function init_canvas_listeners() {
-    var isDrawing = false;
-    ctx.lineWidth = 7;
-    ctx.strokeStyle = "black";
-    ctx.fillStyle = "black";
-    //click Event Listeners
-    mcanv.addEventListener("mousedown", ev_current);
-
-    mcanv.addEventListener("mousemove", ev_current);
-
-    mcanv.addEventListener("mouseup", ev_current);
-
-    mcanv.addEventListener("touchstart", (e) => {
-        var touch = e.targetTouches[0];
-        var menv = new MouseEvent("mousedown", {
-            offsetX: touch.offsetX,
-            offsetY: touch.offsetY,
-        })
-        mcanv.dispatchEvent(menv);
-        e.preventDefault();
-    });
-
-    mcanv.addEventListener("touchmove", (e) => {
-        var touch = e.targetTouches[0];
-        var menv = new MouseEvent("mousemove", {
-            offsetX: touch.offsetX,
-            offsetY: touch.offsetY,
-        })
-        mcanv.dispatchEvent(menv);
-        e.preventDefault();
-    });
-
-    mcanv.addEventListener("touchend", (e) => {
-        var touch = e.targetTouches[0];
-        var menv = new MouseEvent("mouseup", {
-            offsetX: touch.clientX,
-            offsetY: touch.clientY,
-        })
-        mcanv.dispatchEvent(menv);
-        e.preventDefault();
-    });
-
-    mcanv.addEventListener("mouseleave", ev_current);
 }
 
 function init_color_pickers() {
@@ -254,28 +228,63 @@ function init_color_pickers() {
 }
 
 function init_IO() {
-    var uploadid = document.getElementById("upload-interface");
-    uploadid.addEventListener("change", (e) => {
-        if (uploadid.files.length === 0) {
-            window.alert("Please select a file.");
-        } else {
-            var data = createImageBitmap(uploadid.files[0]);
-            data.then(
-                function (value) {
-                    img_upload_data = value;
-                    this.isMoving = true;
-                    requestAnimationFrame(rubberUpload);
-                    for (let i = 0; i < butts.length; i++) {
-                        butts[i].disabled = true;
-                    }
-                },
-                function (error) { window.alert("sorry, error: " + error) }
-            );
-        }
-        uploadid.value = ""; //make sure that the same file can be uploaded multiple times in a row
-    })
+    var uploadid = document.getElementsByClassName("upload");
+    for (let i = 0; i < uploadid.length; i++) {
+        let stink = uploadid[i];
+        stink.addEventListener("change", (e) => {
+            if (stink.files.length === 0) {
+                window.alert("Please select a file.");
+            } else {
+                var data = createImageBitmap(stink.files[0]);
+                data.then(
+                    function (value) {
+                        if (stink.id === "u-image") {
+                            img_upload_data = value;
+                            this.isMoving = true;
+                            requestAnimationFrame(rubberUpload);
+                            for (let i = 0; i < butts.length; i++) {
+                                butts[i].disabled = true;
+                                document.getElementById("upload-tool").disabled = false;
+                            }
+                        } else if (stink.id === "u-pattern") {
+                            const pattern = ctx.createPattern(value, "repeat");
+                            ctx.fillStyle = pattern;
+                            ctx.strokeStyle = pattern;
+                        }
+                    },
+                    function (error) { window.alert("sorry, error: " + error) }
+                );
+            }
+            uploadid.value = ""; //make sure that the same file can be uploaded multiple times in a row
+        })
+    }
+}
+function init_canvas_listeners() {
+    var isDrawing = false;
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    mcanv.addEventListener("mousedown", ev_current);                    //click Event Listeners                    
+    mcanv.addEventListener("mousemove", ev_current);
+    mcanv.addEventListener("mouseup", ev_current);
+    mcanv.addEventListener("mouseleave", (e) => {
+        const ev = new MouseEvent("mouseup");
+        mcanv.dispatchEvent(ev);
+
+    });
 }
 
+function ev_current(e) {
+    var func = mode[e.type];
+    if (func) {
+        func(e);
+        if (e.type === "mouseup") {
+            const thing = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
+            stateChanged();
+        }
+    }
+
+}
 
 /*  Keyboard Listener
     Current Keybinds: 
@@ -292,17 +301,8 @@ onkeydown = onkeyup = function (e) {
     }
 }
 
-function ev_current(e) {
-    var func = mode[e.type];
-    if (func) {
-        func(e);
-        if (e.type === "mouseup") {
-            const thing = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-            stateChanged();
-        }
-    }
 
-}
+
 
 //window resize listener 
 function window_resize() {
@@ -477,13 +477,10 @@ function prepFill(fill, initx, inity) {
         data: new Uint32Array(imgArray.data.buffer), //convert uint8 pixel buffer into uint32 byte array to quarter number of pixel references
     }
 
-    const chunked = [];
     const fill_butlessannoying = fill.substring(1);
-    for (let i = 0; i < 3; i++) {
-        chunked.push(fill_butlessannoying.substring(2 * i, 2 * (i + 1)))
-    }
-    const fillColor = parseInt("ff" + chunked.reverse().join(''), 16); //convert annoying #ffffff string into a number base 10 (and add transparency to match)
-    const pixelColor = getPixel(pixelData, x, y);
+    var chunked = reverseHexByteOrder(fill_butlessannoying);
+    const fillColor = parseInt("ff" + chunked, 16); //convert annoying #ffffff string into a number base 10 (and add transparency to match)
+    const pixelColor = getPixelfromUInt32(pixelData, x, y);
 
     if (pixelColor != fillColor) {
         floodFill(fillColor, pixelColor, pixelData, x, y);
@@ -497,7 +494,7 @@ function floodFill(fillColor, pixelColor, pixelData, x, y) {
     while (s.length != 0) {
         let y = s.pop();
         let x = s.pop();
-        let currentColor = getPixel(pixelData, x, y);
+        let currentColor = getPixelfromUInt32(pixelData, x, y);
         if (currentColor === pixelColor) {
             pixelData.data[y * pixelData.width + x] = fillColor;
             s.push(x - 1, y);
@@ -508,10 +505,44 @@ function floodFill(fillColor, pixelColor, pixelData, x, y) {
     }
 }
 
-function getPixel(pixelData, x, y) {
-    if (x < 0 || y < 0 || x >= pixelData.width || y >= pixelData.height) {
+function getPixelfromUInt32(pixelDataUInt32, x, y) {
+    if (x < 0 || y < 0 || x >= pixelDataUInt32.width || y >= pixelDataUInt32.height) {
         return -1;
     } else {
-        return pixelData.data[y * pixelData.width + x];
+        return pixelDataUInt32.data[y * pixelDataUInt32.width + x]; //reversed byte order!!
     }
+}
+
+function getPixelfromUInt8(pixelDataUInt8, x, y, dpr) {
+    if (dpr) {
+        x = x * dpr;
+        y = y * dpr;
+    }
+    if (x < 0 || y < 0 || x >= pixelDataUInt8.width || y >= pixelDataUInt8.height) {
+        return -1;
+    } else {
+        let thing = 0;
+        for (let i = 3; i >= 0; i--) {
+            thing += pixelDataUInt8.data[y * pixelDataUInt8.width * 4 + x * 4 + i] * Math.pow(2, 8 * i);
+        }
+        console.log(thing);
+        return (thing);
+    }
+}
+
+function invertColor(integerColorValue) {
+    return 4294967295 - integerColorValue; //purewhite minus input
+}
+
+function colorValueToHexCode(integerColorValue) {
+    let inverse_byte_hexcode = toString(integerColorValue, 16);
+    return reverseHexByteOrder(inverse_byte_hexcode)
+}
+
+function reverseHexByteOrder(hexCode) {
+    const chunked = [];
+    for (let i = 0; i < hexCode.length; i += 2) {
+        chunked.push(hexCode.substring(i, i + 2));
+    }
+    return chunked.reverse().join('');
 }
