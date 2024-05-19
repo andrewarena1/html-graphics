@@ -1,13 +1,13 @@
 
 var mcanv;
-var ocanv;
 var ctx;
 var mode;
 var dpr = window.devicePixelRatio;
 var mcanv_data;
 var past_states = [];
+var current_x;
+var current_y;
 var current_state;
-var current_access;
 var clipboard;
 var future_states = [];
 var img_upload_data;
@@ -61,7 +61,6 @@ function init_buttons() {
         mouseup: function (e) {
             if (this.isDrawing) {
                 this.current_event = e;
-                drawLine(ctx, this.current_event, this.previous_event);
                 this.previous_event = null;
                 this.isDrawing = false
             }
@@ -197,6 +196,20 @@ function init_buttons() {
         }
     });
 
+    document.getElementById("current-color").addEventListener("mouseenter", (e) => { //this one is different because it is just completely different
+        var color_menu = document.getElementById("color-menu")
+        color_menu.style.display = "block";
+    });
+    document.getElementById("color-menu").addEventListener("mouseleave", (e) => { //this one is different because it is just completely different
+        var color_menu = document.getElementById("color-menu")
+        color_menu.style.display = "none";
+    });
+    document.getElementById("current-color").addEventListener("mouseleave", (e) => { //this one is different because it is just completely different
+        var color_menu = document.getElementById("color-menu")
+        color_menu.style.display = "none";
+    });
+
+
 }
 
 function init_button_listeners(menu_button, functionality) {
@@ -223,6 +236,7 @@ function init_color_pickers() {
             ctx.strokeStyle = palette[i];
             console.log(ctx.strokeStyle);
             ctx.fillStyle = palette[i];
+            document.getElementById("current-color").style.backgroundColor = palette[i];
         })
     }
 }
@@ -269,12 +283,15 @@ function init_canvas_listeners() {
     mcanv.addEventListener("mouseup", ev_current);
     mcanv.addEventListener("mouseleave", (e) => {
         const ev = new MouseEvent("mouseup");
+        console.log(ev.offsetX, ev.offsetY)
         mcanv.dispatchEvent(ev);
 
     });
 }
 
 function ev_current(e) {
+    current_x = e.offsetX;
+    current_y = e.offsetY;
     var func = mode[e.type];
     if (func) {
         func(e);
@@ -297,7 +314,18 @@ onkeydown = onkeyup = function (e) {
 
     }
     if (map["r"] && e.ctrlKey) {
-        redoCanvas();
+        this.setTimeout(redoCanvas(), 500);
+    }
+    if (map["c"]) {
+        let a = this.document.getElementById("color-menu")
+        console.log(true); // i need a way to always have my mouse position! to ev_current we go
+        a.style.left = `${current_x} px`;
+        a.style.top = `${current_y} px`;
+        a.style.display = "block";
+        console.log(current_x);
+        console.log(current_y);
+
+
     }
 }
 
