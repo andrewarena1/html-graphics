@@ -27,6 +27,8 @@ function init_canvas() {
     ctx.webkitImageSmoothingEnabled = "false";
     ctx.ImageSmoothingEnabled = "false";
 
+    let window_width = window.innerWidth; //here we calculate the width of the color gradient
+
     ctx.fillStyle = "white";                                        //draw a white rect
     drawRect(ctx, { offsetX: mcanv.width, offsetY: mcanv.height }, { offsetX: 0, offsetY: 0 });
     current_state = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
@@ -164,6 +166,7 @@ function init_buttons() {
     const upload_tool = {
         id: "upload_tool",
         button_click: function () {
+            this.isResizing = false;
             document.getElementById("u-image").click();
             ctx.save();
             ctx.setLineDash([5, 5]);
@@ -171,11 +174,13 @@ function init_buttons() {
         },
         mousedown: function (e) {
             if (this.isMoving) {
-                isMoving = false;
-                ctx.drawImage(img_upload_data, e.offsetX, e.offsetY);
+                this.current_event = e;
+                this.isMoving = false;
+                ctx.putImageData(current_state, 0, 0);  //gets rid of dotted lines
+                ctx.drawImage(img_upload_data, e.offsetX, e.offsetY); //draws image(will be replaced if mouse is moved)
                 this.isResizing = true;
-                this.previous_event = e;
                 requestAnimationFrame(rubberUploadResize);
+                this.previous_event = e;
                 for (let i = 0; i < butts.length; i++) {
                     butts[i].disabled = false;
                 }
@@ -183,14 +188,15 @@ function init_buttons() {
         },
         mousemove: function (e) {
             this.current_event = e;
-            if (this.isMoving) {
-                console.log(colorValueToHexCode(getPixelfromUInt8(current_state, e.offsetX, e.offsetY, dpr)));
-            }
         },
         mouseup: function (e) {
-            this.isResizing = false;
-            this.previous_event = null;
-            ctx.restore();
+            console.log(this.isResizing);
+            if (this.isResizing) { //this check prevents Mouseleave listener from bugging out for this tool
+                this.isResizing = false;
+                this.previous_event = null;
+                ctx.restore();
+            }
+
 
         }
     };
@@ -212,7 +218,7 @@ function init_buttons() {
     init_button_listeners(rect_tool);
     init_button_listeners(circle_tool);
     init_button_listeners(fill_tool);
-    init_button_listeners(select_tool);
+    //init_button_listeners(select_tool);
     init_button_listeners(upload_tool);
     init_button_listeners(pattern_tool);
     init_button_listeners(clear_tool);
@@ -248,12 +254,11 @@ function init_color_pickers() {
     for (let i = 0; i < children.length; i++) {
         children[i].style.backgroundColor = palette[i];
         colors.children[i].addEventListener("mousedown", () => {
-
             ctx.strokeStyle = palette[i];
             console.log(ctx.strokeStyle);
             ctx.fillStyle = palette[i];
             document.getElementById("current-color").style.backgroundColor = palette[i];
-            document.getElementById("cool-gradient").style.backgroundImage = `linear-gradient(to right, rgb(255, 255, 255), ${palette[i]}`;
+            document.getElementById("cool-gradient").style.backgroundImage = `linear-gradient(to right, rgb(255, 255, 255), ${palette[i]}, rgb(0, 0, 0, 255)`;
 
         })
     }
@@ -276,6 +281,7 @@ function init_color_pickers() {
 
 function init_IO() {
     var uploadid = document.getElementsByClassName("upload");
+    console.log(uploadid);
     for (let i = 0; i < uploadid.length; i++) {
         let stink = uploadid[i];
         stink.addEventListener("change", (e) => {
@@ -288,22 +294,24 @@ function init_IO() {
                         if (stink.id === "u-image") {                        //UPLOAD STUFF
                             img_upload_data = value;
                             this.isMoving = true;
-                            requestAnimationFrame(rubberUpload);
-                            for (let i = 0; i < butts.length; i++) {
+                            requestAnimationFrame(rubberUpload);           //start the animation of the image moving around
+                            for (let i = 0; i < butts.length; i++) {   //disable other buttons
                                 butts[i].disabled = true;
-                                document.getElementById("upload-tool").disabled = false;
+                                document.getElementById("upload_tool").disabled = false;
                             }
                         } else if (stink.id === "u-pattern") {                      //PATTERN STUFF
                             const pattern = ctx.createPattern(value, "repeat");
                             ctx.fillStyle = pattern;
                             ctx.strokeStyle = pattern;
+                            URL.createObjectURL(stink.files[0])
                             document.getElementById("cool-gradient").style.backgroundImage = "url('images/pattern.png')"
                         }
+                        stink.value = "";   //prevent uploading same image twice causing error
                     },
                     function (error) { window.alert("sorry, error: " + error) }
                 );
             }
-            uploadid.value = ""; //make sure that the same file can be uploaded multiple times in a row
+            //make sure that the same file can be uploaded multiple times in a row
         })
     }
 }
@@ -316,10 +324,7 @@ function init_canvas_listeners() {
     mcanv.addEventListener("mousemove", ev_current);
     mcanv.addEventListener("mouseup", ev_current);
     mcanv.addEventListener("mouseleave", (e) => {
-        const ev = new MouseEvent("mouseup");
-        console.log(ev.offsetX, ev.offsetY)
-        mcanv.dispatchEvent(ev);
-
+        mode.mouseup(e);
     });
 }
 
@@ -330,8 +335,7 @@ function ev_current(e) {
     if (func) {
         func(e);
         if (e.type === "mouseup") {
-            const thing = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
-            stateChanged();
+            stateChanged();         //This doesn't work just yet!!
         }
     }
 
@@ -481,7 +485,9 @@ function rubberUpload() {
 
 function rubberUploadResize() {
     if (this.isResizing) {
-        ctx.putImageData(current_state, 0, 0);
+        if (!(this.current_event.type === "mousedown")) { //this checks if the event is mousedown. if so, the image is not painted over. 
+            ctx.putImageData(current_state, 0, 0);
+        }
         ctx.drawImage(img_upload_data, this.previous_event.offsetX, this.previous_event.offsetY, this.current_event.offsetX - this.previous_event.offsetX, this.current_event.offsetY - this.previous_event.offsetY);
         requestAnimationFrame(rubberUploadResize);
     }

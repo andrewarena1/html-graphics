@@ -6,12 +6,19 @@ body {
 
 }
 
-canvas {
+:root {
+    --buttonwidth: 400px;
+    --colorwidth: 200px;
+    --currentcolwidth: 50px;
+    --topbarheight: 50px;
+}
+
+#mcanv {
     background-color: white;
     cursor: crosshair;
     user-select: none;
     position: absolute;
-    top: 50px;
+    top: var(--topbarheight);
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     z-index: 1;
@@ -22,26 +29,27 @@ canvas {
     flex-direction: row;
     position: fixed;
     z-index: 2;
-    width: 450px;
+    width: var(--buttonwidth);
 }
 
 #cool-gradient {
     position: fixed;
-    left: 450px;
+    cursor: url("images/color-cursor.png") 8 8, crosshair;
     top: 0px;
-    width: 815px;
-    height: 50px;
+    width: calc(100% - var(--buttonwidth) - var(--colorwidth) - var(--currentcolwidth));
+    height: var(--topbarheight);
+    left: var(--buttonwidth);
     z-index: 2;
     border-width: 2px;
     border-color: black;
-    background-image: linear-gradient(to right, rgb(255, 255, 255), rgb(0, 0, 0));
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(0, 0, 0, 255));
 }
 
 
 
 .tool {
     width: 50px;
-    height: 50px;
+    height: var(--topbarheight);
     padding: 0px 0px 0px 0px;
     -webkit-border-radius: 0px;
     vertical-align: middle;
@@ -64,7 +72,7 @@ canvas {
     flex-direction: row;
     flex-wrap: wrap;
     position: fixed;
-    width: 200px;
+    width: var(--colorwidth);
     right: 0px;
     top: 0px;
     z-index: 2;
@@ -72,8 +80,8 @@ canvas {
 
 #current-color {
     position: fixed;
-    width: 50px;
-    height: 50px;
+    width: var(--currentcolwidth);
+    height: var(--topbarheight);
     right: 200px;
     top: 0px;
     z-index: 3;
@@ -83,21 +91,6 @@ canvas {
     border-radius: 0px;
 }
 
-#color-menu {
-    background-color: black;
-    display: none;
-    width: 100px;
-    height: 100px;
-    right: 175px;
-    border-color: blue;
-    border-radius: 5px;
-    border-width: 5px;
-    top: 49px;
-    z-index: 3;
-    position: fixed;
-
-
-}
 
 .sub-menu {
     display: flex;
@@ -125,7 +118,7 @@ canvas {
 
 .color {
     width: 12.5%;
-    height: 25px;
+    height: calc(var(--topbarheight) / 2);
     border-width: 1px;
     border-radius: 0px;
 }
