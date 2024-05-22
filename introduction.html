@@ -14,34 +14,20 @@
 <body onload=init_canvas()>
     <canvas id="mcanv"></canvas>
     <div id="buttons">
-        <button class="tool" id="free-pen"><img src="images/free-pen.png" width="32" height="32"></button>
-        <button class="tool" id="line-pen"><img src="images/line-pen.png"></button>
-        <button class="tool" id="rect-tool"><img src="images/rect-tool.png"></button>
-        <button class="tool" id="circle-tool"><img src="images/circle-tool.png"></button>
-        <button class="tool" id="fill-tool"><img src="images/fill-tool.png"></button>
-        <button class="tool" id="select-tool"><img src="images/select-tool.png"></button>
-        <button class="tool" id="upload-tool"><img src="images/upload-tool.png"></button>
-        <button class="tool" id="pattern-tool"></button>
-        <button class="tool" id="clear"><img src="images/clear.png"></button>
+        <button class="tool" id="free_pen"><img src="images/free-pen.png" width="32" height="32"></button>
+        <button class="tool" id="line_pen"><img src="images/line-pen.png"></button>
+        <button class="tool" id="rect_tool"><img src="images/rect-tool.png"></button>
+        <button class="tool" id="circle_tool"><img src="images/circle-tool.png"></button>
+        <button class="tool" id="fill_tool"><img src="images/fill-tool.png"></button>
+        <button class="tool" id="select_tool"><img src="images/select-tool.png"></button>
+        <button class="tool" id="upload_tool"><img src="images/upload-tool.png"></button>
+        <button class="tool" id="pattern_tool"><img src="images/pattern.png"></button>
+        <button class=" tool" id="clear"><img src="images/clear.png"></button>
     </div>
-    <div class="sub-menu" id="free-sub">
-        <button class="sub-tool" id="tiny-pen"></button>
-        <button class="sub-tool" id="small-pen"></button>
-        <button class="sub-tool" id="medium-pen"></button>
-        <button class="sub-tool" id="large-pen"></button>
-    </div>
-    <div class="sub-menu" id="line-sub">
-        <button class="sub-tool" id="connect-line"></button>
-    </div>
-    <div class="sub-menu" id="rect-sub">
-        <button class="sub-tool" id="hollow-rect"></button>
-        <button class="sub-tool" id="small-pen"></button>
-        <button class="sub-tool" id="medium-pen"></button>
-        <button class="sub-tool" id="large-pen"></button>
-    </div>
+    <div id="cool-gradient"></div>
     <input type="file" class="upload" id="u-image" accept="image/*" />
     <input type="file" class="upload" id="u-pattern" accept="image/*" />
-    <button id="current-color"></button>
+    <button id="current-color" class="color"></button>
     <div id="color-menu">
         <button></button>
         <button></button>
@@ -49,6 +35,7 @@
         <button></button>
         <button></button>
     </div>
+
     <div id="colors">
         <button class="color" id="0"></button>
         <button class="color" id="1"></button>

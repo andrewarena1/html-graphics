@@ -32,6 +32,7 @@ function init_canvas() {
     current_state = ctx.getImageData(0, 0, mcanv.width, mcanv.height);
 
     init_buttons();             //initialize button properties
+    init_submenu();
     init_canvas_listeners();    //init canvas listeners 
     init_color_pickers();       //init color pickers 
     init_IO();                  //bad 
@@ -43,7 +44,8 @@ function init_canvas() {
 function init_buttons() {
     butts = document.getElementsByTagName("button");                         //BUTTONS!!!!!!!
     //button listeners
-    const free_pen = init_button_listeners(document.getElementById("free-pen"), {
+    const free_pen = {
+        id: "free_pen",
         button_click: function (e) {
             //change submenu
         },
@@ -66,8 +68,9 @@ function init_buttons() {
             }
 
         }
-    });
-    const line_pen = init_button_listeners(document.getElementById("line-pen"), {
+    };
+    const line_pen = {
+        id: "line_pen",
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
@@ -83,8 +86,9 @@ function init_buttons() {
                 this.isDrawing = false;
             }
         }
-    });
-    const rect_tool = init_button_listeners(document.getElementById("rect-tool"), {
+    };
+    const rect_tool = {
+        id: "rect_tool",
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
@@ -101,8 +105,9 @@ function init_buttons() {
             }
         }
 
-    });
-    const circle_tool = init_button_listeners(document.getElementById("circle-tool"), {
+    };
+    const circle_tool = {
+        id: "circle_tool",
         mousedown: function (e) {
             this.isDrawing = true;
             this.previous_event = e;
@@ -120,8 +125,9 @@ function init_buttons() {
 
         }
 
-    });
-    const fill_tool = init_button_listeners(document.getElementById("fill-tool"), {
+    };
+    const fill_tool = {
+        id: "fill_tool",
         mousedown: function (e) {
             prepFill(ctx.fillStyle, e.offsetX, e.offsetY);
         },
@@ -132,8 +138,10 @@ function init_buttons() {
             return;
         }
 
-    });
-    const select_tool = init_button_listeners(document.getElementById("select-tool"), {
+    };
+
+    const select_tool = {
+        id: "select_tool",
         mousedown: function (e) {
             this.isMoving = true;
             this.first_event = e;
@@ -152,8 +160,9 @@ function init_buttons() {
 
 
         }
-    })
-    const upload_tool = init_button_listeners(document.getElementById("upload-tool"), {
+    };
+    const upload_tool = {
+        id: "upload_tool",
         button_click: function () {
             document.getElementById("u-image").click();
             ctx.save();
@@ -184,44 +193,50 @@ function init_buttons() {
             ctx.restore();
 
         }
-    });
-    const pattern_tool = init_button_listeners(document.getElementById("pattern-tool"), {
+    };
+    const pattern_tool = {
+        id: "pattern_tool",
         button_click: function () {
             document.getElementById("u-pattern").click();
         }
-    })
-    const clear_tool = init_button_listeners(document.getElementById("clear"), {
+
+    };
+    const clear_tool = {
+        id: "clear",
         button_click: function () {
             clear();
         }
-    });
-
-    document.getElementById("current-color").addEventListener("mouseenter", (e) => { //this one is different because it is just completely different
-        var color_menu = document.getElementById("color-menu")
-        color_menu.style.display = "block";
-    });
-    document.getElementById("color-menu").addEventListener("mouseleave", (e) => { //this one is different because it is just completely different
-        var color_menu = document.getElementById("color-menu")
-        color_menu.style.display = "none";
-    });
-    document.getElementById("current-color").addEventListener("mouseleave", (e) => { //this one is different because it is just completely different
-        var color_menu = document.getElementById("color-menu")
-        color_menu.style.display = "none";
-    });
-
-
+    };
+    init_button_listeners(free_pen);
+    init_button_listeners(line_pen);
+    init_button_listeners(rect_tool);
+    init_button_listeners(circle_tool);
+    init_button_listeners(fill_tool);
+    init_button_listeners(select_tool);
+    init_button_listeners(upload_tool);
+    init_button_listeners(pattern_tool);
+    init_button_listeners(clear_tool);
 }
 
-function init_button_listeners(menu_button, functionality) {
+function init_submenu() {
+    var holder = document.createElement("div");
+    holder.setAttribute("class", "sub-menu");
+    var button1 = document.createElement("button");
+    button1.setAttribute("class", "sub-tool");
+    holder.appendChild(button1);
+    //document.body.appendChild(holder);
+}
+
+function init_button_listeners(menu_button) {
     if (!mode) { //takes the first button initialized as the default mode on page load
-        mode = functionality;
+        mode = menu_button;
     }
-    menu_button.addEventListener("mousedown", function () {
-        if (functionality.button_click) {
-            functionality.button_click();
+    document.getElementById(menu_button.id).addEventListener("mousedown", function () {
+        if (menu_button.button_click) {
+            menu_button.button_click();
         }
-        if (functionality.mousedown) {
-            mode = functionality;
+        if (menu_button.mousedown) {
+            mode = menu_button;
         }
     });
 }
@@ -233,12 +248,30 @@ function init_color_pickers() {
     for (let i = 0; i < children.length; i++) {
         children[i].style.backgroundColor = palette[i];
         colors.children[i].addEventListener("mousedown", () => {
+
             ctx.strokeStyle = palette[i];
             console.log(ctx.strokeStyle);
             ctx.fillStyle = palette[i];
             document.getElementById("current-color").style.backgroundColor = palette[i];
+            document.getElementById("cool-gradient").style.backgroundImage = `linear-gradient(to right, rgb(255, 255, 255), ${palette[i]}`;
+
         })
     }
+    var gradient = document.getElementById("cool-gradient");
+    gradient.addEventListener("click", (e) => {
+        let x = e.offsetX;
+        let y = e.offsetY;
+        let width = gradient.offsetWidth;
+        let percentage = x / width;
+        console.log(ctx.strokeStyle);
+        let color = ctx.strokeStyle.substring(1);
+        let arr = [];
+        for (let i = 0; i < 3; i++) {
+            arr.push(color.substring(2 * i, 2 * i + 2));
+        }
+        console.log(arr);
+        console.log(ctx.strokeStyle);
+    })
 }
 
 function init_IO() {
@@ -252,7 +285,7 @@ function init_IO() {
                 var data = createImageBitmap(stink.files[0]);
                 data.then(
                     function (value) {
-                        if (stink.id === "u-image") {
+                        if (stink.id === "u-image") {                        //UPLOAD STUFF
                             img_upload_data = value;
                             this.isMoving = true;
                             requestAnimationFrame(rubberUpload);
@@ -260,10 +293,11 @@ function init_IO() {
                                 butts[i].disabled = true;
                                 document.getElementById("upload-tool").disabled = false;
                             }
-                        } else if (stink.id === "u-pattern") {
+                        } else if (stink.id === "u-pattern") {                      //PATTERN STUFF
                             const pattern = ctx.createPattern(value, "repeat");
                             ctx.fillStyle = pattern;
                             ctx.strokeStyle = pattern;
+                            document.getElementById("cool-gradient").style.backgroundImage = "url('images/pattern.png')"
                         }
                     },
                     function (error) { window.alert("sorry, error: " + error) }
@@ -456,6 +490,7 @@ function rubberUploadResize() {
 //functions relating to undo and redo
 function stateChanged() {
     past_states.push(current_state);
+    future_states = [];
     if (past_states.length > 10) {
         past_states.shift();
         /* note: this checks if there are more than 10 past_states. 
@@ -565,6 +600,14 @@ function invertColor(integerColorValue) {
 function colorValueToHexCode(integerColorValue) {
     let inverse_byte_hexcode = toString(integerColorValue, 16);
     return reverseHexByteOrder(inverse_byte_hexcode)
+}
+
+function hexCodeToColorValue(hexCode) {
+    let s = hexCode.substring(1);
+    for (let i = 0; i < 3; i++) {
+
+    }
+
 }
 
 function reverseHexByteOrder(hexCode) {

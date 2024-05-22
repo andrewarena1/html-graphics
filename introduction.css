@@ -1,5 +1,4 @@
 body {
-
     margin: 0px;
     padding: 0px 0px 0px 0px;
     overflow-y: auto;
@@ -23,9 +22,22 @@ canvas {
     flex-direction: row;
     position: fixed;
     z-index: 2;
-    width: 100%;
-    background-color: blueviolet;
+    width: 450px;
 }
+
+#cool-gradient {
+    position: fixed;
+    left: 450px;
+    top: 0px;
+    width: 815px;
+    height: 50px;
+    z-index: 2;
+    border-width: 2px;
+    border-color: black;
+    background-image: linear-gradient(to right, rgb(255, 255, 255), rgb(0, 0, 0));
+}
+
+
 
 .tool {
     width: 50px;
@@ -43,6 +55,7 @@ canvas {
 
 .tool:hover {
     background-color: gray;
+    border-color: orange;
 }
 
 
@@ -65,22 +78,24 @@ canvas {
     top: 0px;
     z-index: 3;
     background-color: black;
-    border-width: 1px;
+    border-color: black;
+    border-width: 2px;
     border-radius: 0px;
 }
 
 #color-menu {
+    background-color: black;
     display: none;
-    background-color: white;
     width: 100px;
     height: 100px;
     right: 175px;
-    top: 55px;
-    position: fixed;
-    z-index: 2;
-    border-color: black;
+    border-color: blue;
     border-radius: 5px;
     border-width: 5px;
+    top: 49px;
+    z-index: 3;
+    position: fixed;
+
 
 }
 
@@ -113,6 +128,18 @@ canvas {
     height: 25px;
     border-width: 1px;
     border-radius: 0px;
+}
+
+.color:hover {
+    border-width: 2px;
+    border-radius: 0px;
+    border-color: orange;
+}
+
+#current-color:hover {
+    border-width: 2px;
+    border-radius: 0px;
+    border-color: orange;
 }
 
 .upload {
