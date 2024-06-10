@@ -1,4 +1,3 @@
-
 var mcanv;
 var ctx;
 var mode;
@@ -200,6 +199,19 @@ function init_buttons() {
 
         }
     };
+    const download_tool = {
+        id: "download_tool",
+        button_click: function () {
+            console.log(current_state);
+            a = mcanv.toDataURL("image/png");
+            console.log(a);
+            let download = document.createElement("a");
+            download.href = a;
+            download.download = "aaaaa.png";
+            download.click();
+
+        }
+    }
     const pattern_tool = {
         id: "pattern_tool",
         button_click: function () {
@@ -220,6 +232,7 @@ function init_buttons() {
     init_button_listeners(fill_tool);
     //init_button_listeners(select_tool);
     init_button_listeners(upload_tool);
+    init_button_listeners(download_tool);
     init_button_listeners(pattern_tool);
     init_button_listeners(clear_tool);
 }
