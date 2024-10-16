@@ -10,3 +10,5 @@ To place an image, press the upload button, select an image, click where you wan
 To download your drawing, press the download button. 
 
 **ctrl - z** and **ctrl - r** will undo and redo, respectively. 
+
+Currently only functions on desktop browsers. 
